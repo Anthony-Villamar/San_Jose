@@ -1,0 +1,672 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Serif, sans-serif;
+  font-size: 16px;
+}
+
+
+#contenedor_padre {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/*Estilos header y navbar*/
+#headerContent {
+  width: 100%;
+  background-color: #FFD700;
+  height: 10dvh;
+
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 20px;
+  font-size: 2rem;
+}
+
+#menuBtn {
+  display: none;
+  font-size: 2.5rem;
+  background: none;
+  border: none;
+}
+
+.navbar>a {
+  color: black;
+  text-decoration: none;
+  font-size: 2.5rem;
+  font-weight: bold;
+  animation: entrada_header 0.4s linear;
+  position: relative;
+}
+
+.navbar>a::after {
+  position: absolute;
+  left: 50%;
+  content: "";
+  height: 5px;
+  width: 0%;
+  transition: width 0.4s ease, left 0.3s ease;
+  bottom: -5px;
+}
+
+.navbar>a:hover {
+  color: #010574;
+
+  &::after {
+    display: block;
+    left: 0%;
+    width: 100%;
+    background: linear-gradient(90deg, #4b51c3b9, #040434);
+  }
+}
+
+
+#logoutBtn {
+  background-color: #353574;
+  border-radius: 10px;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.5s ease;
+  animation: entrada_header 0.7s linear;
+}
+
+#logoutBtn:hover {
+  background-color: #181c8a;
+
+}
+
+@keyframes entrada_header {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos del contenido principal */
+#mainContent {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 20px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation:
+    slider 45s infinite linear,
+    entrada_main 0.9s ease-in-out;
+  padding-top: 5dvh;
+  padding-bottom: 5dvh;
+}
+
+@keyframes entrada_main {
+  from {
+    opacity: 0;
+    transform: translateX(-1000px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+@keyframes slider {
+
+  0%,
+  30% {
+    background-image: url('../images/1.jpg');
+  }
+
+  34%,
+  63% {
+    background-image: url('../images/2.jpg');
+  }
+
+  67%,
+  96% {
+    background-image: url('../images/3.jpg');
+  }
+
+  100% {
+    background-image: url('../images/1.jpg');
+  }
+}
+
+/* Contenedor principal de la encuesta */
+.encuesta-container {
+  width: 70%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  padding: 20px;
+  font-size: 2rem;
+  backdrop-filter: blur(50px);
+  margin: 20px 0 30px 0;
+}
+
+option {
+  display: block;
+}
+
+/* Título */
+.encuesta-container>h2 {
+  margin: 20px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 2.5rem;
+  color: #1c1c5c;
+}
+
+/* Tipografía general */
+.encuesta-container,
+#encuestaForm label,
+#encuestaForm input,
+#encuestaForm select,
+#encuestaForm textarea {
+  font-size: 1.5rem
+}
+
+/* Formulario */
+#encuestaForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+/* Selects */
+#atendido_por1 {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  width: 80%;
+}
+
+#atendido_por1 select {
+  flex: 1;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1.1rem;
+}
+
+/* Preguntas */
+.preguntas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+
+
+.preguntas-container>label {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.preguntas-container-motivo {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 80%;
+  gap: 5px;
+}
+
+
+
+.preguntas-container-motivo>select {
+  width: 80%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.preguntas-container,
+.preguntas-container-motivo,
+.comentario-container ,
+.boton-container{
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.oculto {
+  opacity: 0;
+  transform: translateX(-50px);
+  pointer-events: none;
+}
+
+/* Comentario */
+.comentario-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 80%;
+}
+
+.comentario-container>textarea {
+  width: 100%;
+  height: 150px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  resize: none;
+  padding: 10px;
+}
+
+
+/* Estilos para los radios como botones */
+.preguntas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+  width: 80%;
+}
+
+.preguntas input[type="radio"] {
+  display: none;
+  /* Ocultamos el círculo clásico */
+}
+
+.preguntas label {
+  flex: 1 1 0;
+  min-width: 200px;
+  /* ancho mínimo igual para todos */
+  text-align: center;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #353574;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  color: #353574;
+  position: relative;
+  padding-top: 50px;
+  /* espacio arriba para el icono */
+}
+
+/* Neutral por defecto */
+.preguntas label::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  background-image: url("../assets/Emoji Smile Slight/SVG/ic_fluent_emoji_smile_slight_20_filled.svg");
+  /* cara neutral */
+  background-size: contain;
+  background-repeat: no-repeat;
+  transition: background-image 0.8s linear, transform 0.7s ease;
+
+}
+
+.preguntas label {
+  position: relative;
+  padding-top: 50px;
+}
+
+/* Cambiar icono al seleccionar una opcion cuando hay 5 opciones
+#p1:checked~label[for="p1"]::before,
+#t1:checked~label[for="t1"]::before,
+#r1:checked~label[for="r1"]::before {
+  background-image: url("../assets/Emoji Sad/SVG/ic_fluent_emoji_sad_20_filled.svg");
+  cara triste 
+
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p2:checked~label[for="p2"]::before,
+#t2:checked~label[for="t2"]::before,
+#r2:checked~label[for="r2"]::before {
+  background-image: url("../assets/Emoji Sad Slight/SVG/ic_fluent_emoji_sad_slight_20_filled.svg");
+
+   triste 
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p3:checked~label[for="p3"]::before,
+#t3:checked~label[for="t3"]::before,
+#r3:checked~label[for="r3"]::before {
+  background-image: url("../assets/Emoji/SVG/ic_fluent_emoji_20_filled.svg");
+   neutral 
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p4:checked~label[for="p4"]::before,
+#t4:checked~label[for="t4"]::before,
+#r4:checked~label[for="r4"]::before {
+
+  background-image: url("../assets/Emoji Sparkle/SVG/ic_fluent_emoji_sparkle_20_filled.svg");
+   feliz 
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p5:checked~label[for="p5"]::before,
+#t5:checked~label[for="t5"]::before,
+#r5:checked~label[for="r5"]::before {
+  background-image: url("../assets/Emoji Laugh/SVG/ic_fluent_emoji_laugh_20_filled.svg");
+   excelente 
+  transform: translateX(-50%) scale(1.2);
+} */
+
+/*Cuando hay 3 opciones*/
+#p1:checked~label[for="p1"]::before,
+#t1:checked~label[for="t1"]::before,
+#r1:checked~label[for="r1"]::before {
+  background-image: url("../assets/Emoji Laugh/SVG/ic_fluent_emoji_laugh_20_filled.svg");
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p2:checked~label[for="p2"]::before,
+#t2:checked~label[for="t2"]::before,
+#r2:checked~label[for="r2"]::before {
+  background-image: url("../assets/Emoji/SVG/ic_fluent_emoji_20_filled.svg");
+  transform: translateX(-50%) scale(1.2);
+}
+
+#p3:checked~label[for="p3"]::before,
+#t3:checked~label[for="t3"]::before,
+#r3:checked~label[for="r3"]::before {
+  background-image: url("../assets/Emoji Sad Slight/SVG/ic_fluent_emoji_sad_slight_20_filled.svg");
+  transform: translateX(-50%) scale(1.2);
+}
+
+/* Hover */
+.preguntas label:hover {
+  background: #f0f0ff;
+}
+
+/* Cuando está seleccionado */
+.preguntas input[type="radio"]:checked+label {
+  background: linear-gradient(135deg, #353574, #181c8a);
+  color: white;
+  border-color: #181c8a;
+  font-weight: bold;
+  transform: scale(1.05);
+}
+
+/* Botón */
+.boton-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#mainContent button {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #353574, #181c8a);
+  color: white;
+  font-size: 2rem;
+  width: 30%;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.8s ease;
+}
+
+#mainContent button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #181c8a, #353574);
+}
+
+
+/*Estilos del pie de pagina*/
+#footerContent {
+  width: 100%;
+  min-height: 100px;
+  background: #091e62dd;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  animation: entrada_footer 1.5s ease;
+}
+
+#footerContent>div>p {
+  color: white;
+  text-decoration: bold;
+  font-size: 2rem;
+  padding: 20px;
+}
+
+@keyframes entrada_footer {
+  from {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+}
+
+
+/* --- Ajuste general para tablets y móviles medianos --- */
+@media (max-width: 768px) {
+  
+
+  .navbar {
+    font-size: 1.5rem;
+  }
+
+  .navbar>a {
+    font-size: 2rem;
+  }
+
+  #logoutBtn {
+    font-size: 1em;
+  }
+
+
+  .encuesta-container {
+    width: 90%;
+    padding: 15px;
+    font-size: 1.1rem;
+    border-radius: 20px;
+  }
+
+  .encuesta-container>h2 {
+    font-size: 1.6rem;
+  }
+
+  #mainContent button {
+    width: 80%;
+    font-size: 1.2rem;
+    padding: 10px 0;
+  }
+
+  #footerContent>div>p {
+    font-size: 1rem;
+  }
+
+  #encuestaForm label,
+  #encuestaForm input,
+  #encuestaForm select,
+  #encuestaForm textarea {
+    font-size: 1.1rem;
+  }
+
+  .preguntas label {
+    min-width: 120px;
+  }
+
+  .preguntas-container-motivo {
+    flex-direction: column;
+    width: 90%;
+  }
+
+  .preguntas-container-motivo>select {
+    width: 100%;
+  }
+}
+
+/* --- Ajuste fino para móviles pequeños (≤480px) --- */
+@media (max-width: 480px) {
+  .navbar {
+    font-size: 2rem;
+  }
+
+  .navbar>a {
+    font-size: 1.5rem;
+  }
+
+  #logoutBtn {
+    font-size: 0.5em;
+  }
+
+  .encuesta-container {
+    width: 92%;
+    padding: 12px;
+    font-size: 1rem;
+    backdrop-filter: blur(18px);
+  }
+
+  .encuesta-container>h2 {
+    font-size: 1.4rem;
+  }
+
+  .preguntas-container label,
+  .preguntas-container-motivo label,
+  .comentario-container label {
+    font-size: 1rem;
+  }
+
+  #mainContent button {
+    width: 90%;
+    font-size: 1.1rem;
+  }
+
+  #atendido_por1 {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .preguntas label {
+    min-width: 80px;
+    padding-top: 40px;
+  }
+
+  #footerContent>div>p {
+    font-size: 0.95rem;
+  }
+}
+
+/* --- Ajuste extremo para pantallas muy pequeñas (≤375px como iPhone SE) --- */
+@media (max-width: 375px) {
+
+  .navbar {
+    font-size: 1rem;
+  }
+
+  .navbar>a {
+    font-size: 1.5rem;
+  }
+
+  #logoutBtn {
+    font-size: 1em;
+  }
+
+
+  .encuesta-container {
+    width: 94%;
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .encuesta-container>h2 {
+    font-size: 1.2rem;
+  }
+
+  select,
+  textarea,
+  input[type="radio"]+label {
+    font-size: 0.9rem;
+  }
+
+  #mainContent button {
+    font-size: 1rem;
+    width: 95%;
+  }
+
+  #footerContent>div>p {
+    font-size: 0.9rem;
+  }
+}
+
+/* --- Ajuste para modo horizontal (landscape) --- */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  #headerContent {
+    height: 14dvh; /* un poco más alto */
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+
+  #headerContent h1,
+  #headerContent h2 {
+    font-size: 1rem;
+  }
+
+  #headerContent button {
+    padding: 6px 12px;
+    font-size: 1.5rem;
+    border-radius: 8px;
+  }
+
+  #mainContent {
+    padding-top: 2dvh;
+  }
+
+  #atendido_por1 {
+    flex-direction: column;
+    gap: 10px;
+  
+  }
+
+  .encuesta-container {
+    width: 85%;
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  .preguntas label {
+    min-width: 100px;
+    padding-top: 40px;
+  }
+}

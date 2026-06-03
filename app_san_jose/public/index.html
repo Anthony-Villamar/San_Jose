@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Sesión</title>
+  <link rel="stylesheet" href="styles/estiloslogin.css">
+   <script src="https://kit.fontawesome.com/d26ee513d0.js" crossorigin="anonymous"></script>
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6811935099126260" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6811935099126260"> -->
+</head>
+<body>
+
+  <div class="login-container">
+    <img id="logo" src="./images/logo2.png" alt="Logo" class="logo">
+    <h2>Inicio de Sesión</h2>
+    <form id="loginForm">
+      <div id="usuario-container">
+        <label for="usuario" >Usuario</label>
+        <input type="text" id="usuario" maxlength="20" required>
+      </div>
+      <div id="contrasena-container">
+        <label for="contrasena">Contraseña</label>
+        <div  class="input-group">
+          <input type="password" id="contrasena" maxlength="20" required>
+          <button class="button_eye" type="button" id="togglePassword">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" id="login">Ingresar</button>
+    </form>
+    <a class="encuestas" href="/secretaria">Pulse aqui para ir a la encuesta de secretaria</a>
+    <a class="encuestas" href="/colecturia">Pulse aqui para ir a la encuesta de colecturia</a>
+  </div>
+
+  <script src="scripts/login.js"></script>
+</body>
+</html>
