@@ -1,0 +1,454 @@
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const spanAnio = document.getElementById('anio');
+  if (spanAnio) spanAnio.textContent = new Date().getFullYear();
+
+  // ── Sesión ────────────────────────────────────────────────
+  let usuario;
+  try {
+    const res = await fetch('/api/login/me', { credentials: 'include' });
+    if (!res.ok) throw new Error('No logueado');
+    usuario = await res.json();
+  } catch {
+    alert('No ha iniciado sesión correctamente.');
+    window.location.href = '/';
+    return;
+  }
+  document.getElementById('nombreUsuario').textContent = usuario.usuario;
+
+  // ── Tipo de filtro ────────────────────────────────────────
+  const tipoFiltro  = document.getElementById('tipoFiltro');
+  const filtroUnico = document.getElementById('filtroFechaUnica');
+  const filtroRango = document.getElementById('filtroRangoFechas');
+
+  tipoFiltro.addEventListener('change', () => {
+    const esRango = tipoFiltro.value === 'rango';
+    filtroUnico.style.display = esRango ? 'none'  : 'block';
+    filtroRango.style.display = esRango ? 'block' : 'none';
+  });
+
+  // ── Cargar todo en paralelo ───────────────────────────────
+  try {
+    const [detalle, tendencia, comentarios, distribucion, motivos] = await Promise.all([
+      fetch('/api/estadisticas/detalle',         { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/estadisticas/mi-tendencia',    { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/estadisticas/mis-comentarios', { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/estadisticas/mi-distribucion', { credentials: 'include' }).then(r => r.json()),
+      fetch('/api/estadisticas/mis-motivos',     { credentials: 'include' }).then(r => r.json()),
+    ]);
+
+    renderStatCards(detalle);
+    renderDonuts(detalle);
+    renderDistribucion(distribucion);
+    renderMotivos(motivos);
+    renderTendenciaPersonal(tendencia);
+    renderComentarios(comentarios);
+
+    if (detalle.promedio_puntualidad != null) mostrarMensajesMotivacionales(detalle);
+  } catch (err) {
+    console.error('Error cargando datos:', err);
+  }
+
+  // ── Filtro por día / rango ────────────────────────────────
+  let graficoPastel = null;
+
+  function mostrarDatosYGrafico(filtrado, titulo) {
+    const container = document.getElementById('estadisticasDiarias');
+
+    const miniCard = (label, value, color) => {
+      const val = Number(value) || 0;
+      const pct = Math.round((val / 3) * 100);
+      return `
+        <div class="stat-card" style="border-left-color:${color}">
+          <div class="stat-body">
+            <span class="stat-label">${label}</span>
+            <span class="stat-value" style="color:${color};font-size:1.3rem">${val.toFixed(2)}</span>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill" style="width:${pct}%;background:${color}"></div>
+            </div>
+            <span class="stat-sub">de 3.00</span>
+          </div>
+        </div>`;
+    };
+
+    container.innerHTML = `
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;font-weight:600">${titulo}</p>
+      <div class="stats-grid">
+        ${miniCard('Puntualidad', filtrado.promedio_puntualidad, '#2563eb')}
+        ${miniCard('Trato',       filtrado.promedio_trato,       '#16a34a')}
+        ${miniCard('Resolución',  filtrado.promedio_resolucion,  '#f59e0b')}
+      </div>`;
+
+    const canvas = document.getElementById('graficoPastel');
+    canvas.style.display = 'block';
+    if (graficoPastel) graficoPastel.destroy();
+
+    graficoPastel = new Chart(canvas.getContext('2d'), {
+      type: 'polarArea',
+      data: {
+        labels: ['Puntualidad', 'Trato', 'Resolución'],
+        datasets: [{
+          data: [
+            filtrado.promedio_puntualidad || 0,
+            filtrado.promedio_trato       || 0,
+            filtrado.promedio_resolucion  || 0
+          ],
+          backgroundColor: ['rgba(37,99,235,.7)', 'rgba(22,163,74,.7)', 'rgba(245,158,11,.7)'],
+          borderColor:     ['#2563eb', '#16a34a', '#f59e0b'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        scales:  { r: { suggestedMin: 0, suggestedMax: 3 } },
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  async function filtrarPorFecha(fecha) {
+    try {
+      const res  = await fetch('/api/estadisticas/detalle/diario', { credentials: 'include' });
+      const dias = await res.json();
+      const key  = new Date(fecha).toISOString().slice(0, 10);
+      const dato = dias.find(d => new Date(d.fecha).toISOString().slice(0, 10) === key);
+      if (dato) {
+        mostrarDatosYGrafico(dato, key);
+      } else {
+        document.getElementById('estadisticasDiarias').innerHTML = '<p style="color:var(--muted);font-size:.85rem">No hay datos para esta fecha.</p>';
+        document.getElementById('graficoPastel').style.display = 'none';
+        if (graficoPastel) { graficoPastel.destroy(); graficoPastel = null; }
+      }
+    } catch (err) { console.error(err); }
+  }
+
+  document.getElementById('filtrarBtn').addEventListener('click', async () => {
+    if (tipoFiltro.value === 'fecha') {
+      const fecha = document.getElementById('fechaFiltro').value;
+      if (!fecha) return alert('Selecciona una fecha');
+      filtrarPorFecha(fecha);
+    } else {
+      const desde = document.getElementById('fechaInicoo').value;
+      const hasta = document.getElementById('fechaFin').value;
+      if (!desde || !hasta) return alert('Selecciona ambas fechas');
+      try {
+        const res  = await fetch(`/api/estadisticas/detalle/promedio?desde=${desde}&hasta=${hasta}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!data?.promedio_puntualidad && !data?.promedio_trato && !data?.promedio_resolucion) {
+          document.getElementById('estadisticasDiarias').innerHTML = '<p style="color:var(--muted);font-size:.85rem">No hay datos para este rango.</p>';
+          document.getElementById('graficoPastel').style.display = 'none';
+          if (graficoPastel) { graficoPastel.destroy(); graficoPastel = null; }
+        } else {
+          mostrarDatosYGrafico(data, `Promedio del ${desde} al ${hasta}`);
+        }
+      } catch (err) { console.error(err); }
+    }
+  });
+
+  document.getElementById('fechaFiltro').value = new Date().toISOString().slice(0, 10);
+
+  // ── Reporte personal ──────────────────────────────────────
+  document.getElementById('btnGenerarReporte')?.addEventListener('click', () => {
+    const inicio = document.getElementById('reporteInicio').value;
+    const fin    = document.getElementById('reporteFin').value;
+    if (!inicio || !fin)
+      return Swal.fire('Atención', 'Selecciona el período para el reporte.', 'info');
+    const url = `/api/reportes/calificaciones/pdf?inicio=${inicio}&fin=${fin}&cedula=${usuario.cedula}`;
+    document.getElementById('reporteIframe').src = url;
+    document.getElementById('reportePreview').style.display = 'block';
+    document.getElementById('btnDescargarReporte').onclick = () => window.open(url, '_blank');
+  });
+
+  // ── Modal editar perfil ───────────────────────────────────
+  const editBtn = document.getElementById('editPerfilBtn');
+  const modal   = document.getElementById('editModal');
+  const emClose = document.getElementById('emClose');
+  const emSave  = document.getElementById('emSave');
+
+  editBtn?.addEventListener('click', e => {
+    e.preventDefault();
+    document.getElementById('emUsuario').value     = usuario.usuario;
+    document.getElementById('emPass').value        = '';
+    document.getElementById('emPassConfirm').value = '';
+    modal.style.display = 'flex';
+  });
+
+  emClose?.addEventListener('click',  () => { modal.style.display = 'none'; });
+  modal?.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+  emSave?.addEventListener('click', async () => {
+    const nuevoUsuario = document.getElementById('emUsuario').value.trim();
+    const nuevaPass    = document.getElementById('emPass').value;
+    const confirmPass  = document.getElementById('emPassConfirm').value;
+
+    if (!nuevoUsuario && !nuevaPass)
+      return Swal.fire('Sin cambios', 'Ingresa un nuevo usuario o contraseña.', 'info');
+    if (nuevaPass && nuevaPass !== confirmPass)
+      return Swal.fire('Error', 'Las contraseñas no coinciden.', 'error');
+    if (nuevaPass && nuevaPass.length < 6)
+      return Swal.fire('Error', 'La contraseña debe tener al menos 6 caracteres.', 'error');
+
+    const body = {};
+    if (nuevoUsuario && nuevoUsuario !== usuario.usuario) body.usuario    = nuevoUsuario;
+    if (nuevaPass)                                        body.contrasena = nuevaPass;
+
+    if (!Object.keys(body).length)
+      return Swal.fire('Sin cambios', 'No hay cambios nuevos que guardar.', 'info');
+
+    try {
+      const res  = await fetch(`/api/usuarios/${usuario.cedula}`, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        modal.style.display = 'none';
+        await Swal.fire('Actualizado', 'Datos guardados. Vuelve a iniciar sesión.', 'success');
+        await fetch('/api/login/logout', { method: 'POST', credentials: 'include' });
+        window.location.href = '/';
+      } else {
+        Swal.fire('Error', data.error || 'No se pudo actualizar.', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Error', 'Error al conectar con el servidor.', 'error');
+    }
+  });
+
+});
+
+// ── Logout ────────────────────────────────────────────────────
+document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+  try {
+    const res  = await fetch('/api/login/logout', { method: 'POST', credentials: 'include' });
+    const data = await res.json();
+    if (data.ok) window.location.href = '/';
+  } catch (err) { console.error(err); }
+});
+
+// ── Stats cards con comparación de área ───────────────────────
+function renderStatCards(detalle) {
+  const container = document.getElementById('statsGrid');
+  if (!container) return;
+
+  const metrics = [
+    { label: 'Puntualidad',          value: detalle.promedio_puntualidad, color: '#2563eb', isBar: true  },
+    { label: 'Trato',                value: detalle.promedio_trato,       color: '#16a34a', isBar: true  },
+    { label: 'Resolución',           value: detalle.promedio_resolucion,  color: '#f59e0b', isBar: true  },
+    { label: 'Total atenciones',     value: detalle.total_atenciones,     color: '#1e3a8a', isBar: false },
+    { label: '% Atendidos a tiempo', value: detalle.pct_a_tiempo,         color: '#0ea5e9', isPct: true  }
+  ];
+
+  container.innerHTML = metrics.map(m => {
+    const val = Number(m.value) || 0;
+    let barHTML = '';
+    if (m.isBar) {
+      barHTML = `
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill" style="width:${Math.round((val/3)*100)}%;background:${m.color}"></div>
+        </div>
+        <span class="stat-sub">de 3.00</span>`;
+    } else if (m.isPct) {
+      barHTML = `
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill" style="width:${val}%;background:${m.color}"></div>
+        </div>
+        <span class="stat-sub">de 100%</span>`;
+    }
+    const display = m.isBar ? val.toFixed(2) : m.isPct ? `${val}%` : val;
+    return `
+      <div class="stat-card" style="border-left-color:${m.color}">
+        <div class="stat-body">
+          <span class="stat-label">${m.label}</span>
+          <span class="stat-value" style="color:${m.color}">${display}</span>
+          ${barHTML}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Donuts de métricas ────────────────────────────────────────
+function renderDonuts(detalle) {
+  const container = document.getElementById('donutsContainer');
+  if (!container) return;
+
+  const metrics = [
+    { label: 'Puntualidad', value: detalle.promedio_puntualidad || 0, color: '#2563eb', bg: '#dbeafe' },
+    { label: 'Trato',       value: detalle.promedio_trato       || 0, color: '#16a34a', bg: '#dcfce7' },
+    { label: 'Resolución',  value: detalle.promedio_resolucion  || 0, color: '#f59e0b', bg: '#fef3c7' }
+  ];
+
+  const nivel = v => v >= 2.34 ? { txt: 'Excelente', c: '#16a34a' } : v >= 1.67 ? { txt: 'Regular', c: '#f59e0b' } : { txt: 'Deficiente', c: '#dc2626' };
+
+  container.innerHTML = metrics.map((m, i) => `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="position:relative;width:130px;height:130px;flex-shrink:0">
+        <canvas id="donut_${i}" style="width:130px!important;height:130px!important"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+          <div style="font-size:1.25rem;font-weight:800;color:${m.color};line-height:1">${Number(m.value).toFixed(2)}</div>
+          <div style="font-size:0.6rem;color:#9ca3af;margin-top:2px">de 3.00</div>
+        </div>
+      </div>
+      <span style="font-size:0.85rem;font-weight:700;color:#374151;letter-spacing:.3px">${m.label}</span>
+      <span style="font-size:0.72rem;font-weight:600;color:${nivel(m.value).c}">${nivel(m.value).txt}</span>
+    </div>
+  `).join('');
+
+  metrics.forEach((m, i) => {
+    const val = Math.min(Number(m.value) || 0, 3);
+    new Chart(document.getElementById(`donut_${i}`), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [val, 3 - val],
+          backgroundColor: [m.color, m.bg],
+          borderWidth: 0,
+          hoverOffset: 0
+        }]
+      },
+      options: {
+        cutout: '76%',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { animateRotate: true, duration: 900, easing: 'easeOutQuart' },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+      }
+    });
+  });
+}
+
+// ── Distribución de calificaciones ────────────────────────────
+function renderDistribucion(data) {
+  const canvas = document.getElementById('distribucionChart');
+  if (!canvas) return;
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Bajo (1)', 'Regular (2)', 'Excelente (3)'],
+      datasets: [
+        { label: 'Puntualidad', data: [data.p1, data.p2, data.p3], backgroundColor: 'rgba(37,99,235,.75)',   borderRadius: 4 },
+        { label: 'Trato',       data: [data.t1, data.t2, data.t3], backgroundColor: 'rgba(22,163,74,.75)',   borderRadius: 4 },
+        { label: 'Resolución',  data: [data.r1, data.r2, data.r3], backgroundColor: 'rgba(245,158,11,.75)',  borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Motivos más atendidos ─────────────────────────────────────
+function renderMotivos(data) {
+  const canvas = document.getElementById('motivosChart');
+  if (!canvas) return;
+  if (!data.length) {
+    canvas.style.display = 'none';
+    canvas.closest('.graficos').insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);padding:14px 0;font-size:.85rem">Sin datos de motivos.</p>');
+    return;
+  }
+  new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.nombre_motivo),
+      datasets: [{
+        label: 'Atenciones',
+        data: data.map(d => d.total),
+        backgroundColor: 'rgba(30,58,138,.7)',
+        borderRadius: 4,
+        maxBarThickness: 32
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── Tendencia personal ────────────────────────────────────────
+let _tendenciaChart = null;
+function renderTendenciaPersonal(data) {
+  const canvas = document.getElementById('tendenciaPersonalChart');
+  if (!canvas) return;
+  if (!data.length) {
+    canvas.style.display = 'none';
+    canvas.closest('.graficos').insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);padding:14px 0;font-size:.85rem">Sin datos en los últimos 30 días.</p>');
+    return;
+  }
+  if (_tendenciaChart) _tendenciaChart.destroy();
+  _tendenciaChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: data.map(d => String(d.dia).slice(5)),
+      datasets: [
+        { label: 'Puntualidad', data: data.map(d => d.puntualidad), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#2563eb' },
+        { label: 'Trato',       data: data.map(d => d.trato),       borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.06)',  tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#16a34a' },
+        { label: 'Resolución',  data: data.map(d => d.resolucion),  borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#f59e0b' }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } },
+      scales: {
+        y: { min: 0, max: 3, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── Comentarios recibidos ─────────────────────────────────────
+function renderComentarios(data) {
+  const section   = document.getElementById('comentariosSection');
+  const container = document.getElementById('comentariosRecientes');
+  if (!section || !container || !data.length) return;
+  section.style.display = 'block';
+  container.innerHTML = data.map(c => {
+    const fecha = new Date(c.fecha).toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `
+      <div class="comentario-card">
+        <div class="comentario-meta">
+          <span class="comentario-fecha">${fecha}</span>
+          <div class="comentario-scores">
+            <span style="color:#2563eb">P: ${c.puntualidad}</span>
+            <span style="color:#16a34a">T: ${c.trato}</span>
+            <span style="color:#f59e0b">R: ${c.resolucion}</span>
+          </div>
+        </div>
+        <p class="comentario-texto">"${c.comentario}"</p>
+      </div>`;
+  }).join('');
+}
+
+// ── Mensajes motivacionales ───────────────────────────────────
+async function mostrarMensajesMotivacionales(detalle) {
+  const footer = document.getElementById('mensajeMotivacional');
+  if (!footer) return;
+  const categorias = [
+    { nombre: 'Puntualidad', puntaje: detalle.promedio_puntualidad },
+    { nombre: 'Trato',       puntaje: detalle.promedio_trato       },
+    { nombre: 'Resolución',  puntaje: detalle.promedio_resolucion  }
+  ];
+  const mensajes = await Promise.all(
+    categorias.map(async c => {
+      const res  = await fetch('/api/generar-mensaje', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoria: c.nombre, puntaje: Number(c.puntaje) })
+      });
+      const data = await res.json();
+      return `<span>${c.nombre}: ${data.mensaje}</span>`;
+    })
+  );
+  footer.innerHTML = mensajes.join('<br>');
+}

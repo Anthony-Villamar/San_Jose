@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Administrador</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="../styles/estilosadministrador.css" />
+  <!-- Linking Google fonts for icons -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="site-nav">
+    <button class="sidebar-toggle">
+      <span class="material-symbols-rounded">menu</span>
+    </button>
+  </nav>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar collapsed">
+      <!-- Sidebar header -->
+      <div class="sidebar-header">
+        <img src="../images/logo2.png" class="header-logo" />
+        <button class="sidebar-toggle">
+          <span class="material-symbols-rounded">chevron_left</span>
+        </button>
+      </div>
+      <div class="sidebar-content">
+        <!-- Search Form -->
+        <form action="#" class="search-form">
+          <span class="material-symbols-rounded">search</span>
+          <input type="search" placeholder="Search..." required />
+        </form>
+        <!-- Sidebar Menu -->
+        <ul class="menu-list">
+          <li class="menu-item">
+            <a href="/administrador" class="menu-link">
+              <span class="material-symbols-rounded">dashboard</span>
+              <span class="menu-label">Panel</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="/administrador_analisis" class="menu-link">
+              <span class="material-symbols-rounded">insert_chart</span>
+              <span class="menu-label">Analisis</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="/administrador_create" class="menu-link">
+              <span class="material-symbols-rounded">add_ad</span>
+              <span class="menu-label">Crear usuario</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="/administrador_update" class="menu-link">
+              <span class="material-symbols-rounded">autorenew</span>
+              <span class="menu-label">Actualizar usuario</span>
+            </a>
+          </li>
+          <li class="menu-item">
+            <a href="/administrador_deactivation" class="menu-link">
+              <span class="material-symbols-rounded">add_task</span>
+              <span class="menu-label">Desactivar usuario</span>
+            </a>
+          </li>
+          <!-- <li class="menu-item">
+              <a href="#" class="menu-link">
+                <span class="material-symbols-rounded">group</span>
+                <span class="menu-label">Customers</span>
+              </a>
+            </li> -->
+          <li id="logoutBtn" class="menu-item">
+            <a id="logout" class="menu-link">
+              <span class="material-symbols-rounded">exit_to_app</span>
+              <!-- <span class="menu-label">Settings</span> -->
+              <span class="menu-label logoutBtn1">Cerrar sesión</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <button class="theme-toggle">
+          <div class="theme-label">
+            <span class="theme-icon material-symbols-rounded">dark_mode</span>
+            <span class="theme-text">Dark Mode</span>
+          </div>
+          <div class="theme-toggle-track">
+            <div class="theme-toggle-indicator"></div>
+          </div>
+        </button>
+      </div>
+    </aside>
+    <div class="main-content">
+      <!-- Hero -->
+      <header class="page-hero page-hero--primary">
+        <div class="page-hero__icon">
+          <span class="material-symbols-rounded">person_add</span>
+        </div>
+        <div>
+          <h1 class="page-hero__title">Registrar Nuevo Usuario</h1>
+          <p class="page-hero__subtitle">Completa la información requerida para crear la cuenta.</p>
+        </div>
+      </header>
+
+      <!-- Card Form -->
+      <form id="registroForm" class="form-card">
+        <!-- Identificación -->
+        <h3 class="section-title">
+          <span class="section-title__dot"></span> Identificación
+        </h3>
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="cedula">Cédula</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">badge</span>
+              <input type="text" id="cedula" maxlength="10" required />
+            </div>
+            <small id="cedulaMensaje" class="cedula-mensaje"></small>
+          </div>
+
+          <div class="input-group">
+            <label for="usuarioNuevo">Usuario</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">person</span>
+              <input type="text" id="usuarioNuevo" maxlength="20" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Personales -->
+        <h3 class="section-title">
+          <span class="section-title__dot"></span> Datos personales
+        </h3>
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="nombre">Nombre</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">badge</span>
+              <input type="text" id="nombre" maxlength="25" required />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="apellido">Apellido</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">badge</span>
+              <input type="text" id="apellido" maxlength="25" required />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="correo">Correo</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">mail</span>
+              <input type="email" id="correo" maxlength="50" required />
+            </div>
+            <small id="correoMensaje" class="correo-mensaje"></small>
+          </div>
+
+          <div class="input-group">
+            <label for="telefono">Teléfono</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">call</span>
+              <input type="text" id="telefono" maxlength="10" required />
+            </div>
+            <small id="telefonoMensaje" class="telefono-mensaje"></small>
+            <!-- <button type="button" class="btn btn-secondary btn-sm" id="btnEnviarCodigo">
+              Enviar código SMS
+            </button> -->
+          </div>
+        </div>
+
+        <!-- Acceso -->
+        <h3 class="section-title">
+          <span class="section-title__dot"></span> Acceso y Rol
+        </h3>
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="contrasenaNuevo">Contraseña</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">lock</span>
+              <input type="text" id="contrasenaNuevo" maxlength="20" required />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="rol">Rol</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">verified_user</span>
+              <select id="rol" required>
+                <option value="" disabled selected>Seleccione un rol</option>
+                <!-- (Se rellena por JS) -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <span class="material-symbols-rounded">add_task</span> Registrar usuario
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="../scripts/admin_create.js"></script>
+  <script src="../scripts/paneladmin.js"></script>
+</body>
+
+</html>

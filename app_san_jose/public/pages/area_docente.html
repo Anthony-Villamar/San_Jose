@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Docente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="../styles/estilopaneles.css">
+</head>
+
+<body>
+  <div class="contenedor-padre">
+    <header class="header">
+      <!-- Navbar -->
+      <nav>
+        <a href="/area_docente">Docentes</a>
+        <ul>
+          <a href="/area_docente">Inicio</a>
+          <a id="logoutBtn">Cerrar sesión</a>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="main">
+      <!-- Contenido -->
+      <div class="contenido-main">
+        <h2>Bienvenido, <span id="nombreUsuario"></span></h2>
+
+        <!-- TOP 3 -->
+        <div class="graficos">
+          <h4>Top 3 de Atención</h4>
+          <div id="topAtenciones" class="cards-container"></div>
+        </div>
+
+        <!-- Estadísticas generales -->
+        <div class="graficos">
+          <h4>Mis Estadísticas</h4>
+          <div id="detalleUsuario"></div>
+          <canvas id="graficoGeneral"></canvas>
+        </div>
+
+        <!-- Estadísticas por día -->
+        <div class="graficos">
+          <h4 class="text-secondary">Estadísticas por Día</h4>
+
+          <!-- Selector de tipo de filtro -->
+          <label for="tipoFiltro">Filtrar por:</label>
+          <select id="tipoFiltro">
+            <option value="fecha">Fecha específica</option>
+            <option value="rango">Rango de fechas</option>
+          </select>
+
+          <!-- Input para fecha única -->
+          <div id="filtroFechaUnica">
+            <label for="fechaFiltro" class="form-label">Fecha:</label>
+            <input type="date" id="fechaFiltro" class="form-control mb-3" />
+          </div>
+
+          <!-- Inputs para rango de fechas -->
+          <div id="filtroRangoFechas">
+            <label for="fechaInicoo">Desde:</label>
+            <input type="date" id="fechaInicoo" />
+
+            <label for="fechaFin">Hasta:</label>
+            <input type="date" id="fechaFin" />
+          </div>
+
+          <!-- Botón de filtrado -->
+          <button id="filtrarBtn">Filtrar</button>
+
+          <!-- Resultados -->
+          <div id="estadisticasDiarias"></div>
+          <canvas id="graficoPastel" width="600" height="400" class="mx-auto d-block"></canvas>
+        </div>
+      </div>
+    </main>
+    <!-- ===== Footer ===== -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p>&copy; <span id="anio"></span> Sistema de Atención — Docente</p>
+        <p id="mensajeMotivacional" class="mensaje-ia"></p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="../scripts/estadisticasUsuario.js"></script>
+</body>
+
+</html>
