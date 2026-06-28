@@ -412,6 +412,47 @@ usuariosRouter.get("/verificacion-email/:correo", async (req, res) => {
   }
 });
 
+usuariosRouter.get('/areas', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id_area, nombre_area FROM areas ORDER BY id_area');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener áreas' });
+  }
+});
+
+usuariosRouter.post('/areas', async (req, res) => {
+  const { nombre_area } = req.body;
+  if (!nombre_area || typeof nombre_area !== 'string' || nombre_area.trim().length < 2) {
+    return res.status(400).json({ error: 'Nombre de área inválido.' });
+  }
+  const nombre = nombre_area.trim().toLowerCase();
+
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [[existe]] = await conn.query('SELECT id_area FROM areas WHERE nombre_area = ?', [nombre]);
+    if (existe) {
+      await conn.rollback();
+      return res.status(409).json({ error: 'El área ya existe.' });
+    }
+
+    await conn.query('INSERT INTO areas (nombre_area) VALUES (?)', [nombre]);
+    await conn.query('INSERT INTO roles (nombre_rol) VALUES (?)', [nombre]);
+
+    await conn.commit();
+    res.status(201).json({ success: true, message: `Área "${nombre}" creada correctamente.` });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
+    res.status(500).json({ error: 'Error al crear área.' });
+  } finally {
+    conn.release();
+  }
+});
+
 usuariosRouter.get('/area/:area', async (req, res) => {
   const { area } = req.params;
 

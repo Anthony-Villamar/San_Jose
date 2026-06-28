@@ -43,7 +43,7 @@ async function cargarRoles(selectElement, selectedRol = '') {
 // Cargar roles en el select de registro al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
   cargarRoles(document.getElementById('rol'));
-  // El select de actualización se llenará dinámicamente al buscar usuario
+  cargarAreas();
 });
 
 //verificar cedula y autocompletar nombre y apellido con api de web services
@@ -103,14 +103,6 @@ cedulaInput.addEventListener("input", () => {
   }, 500);
 });
 
-// Cargar roles en el select de registro al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-  cargarRoles(document.getElementById('rol'));
-  // El select de actualización se llenará dinámicamente al buscar usuario
-});
-
-
-
 //VALIDAR TELEFONO
 const telefonoInput = document.getElementById("telefono");
 const telefonoMensaje = document.getElementById("telefonoMensaje");
@@ -149,40 +141,6 @@ telefonoInput.addEventListener("input", () => {
     }
   }, 500);
 });
-
-// async function validarWhatsApp(telefono) {
-//   telefonoMensaje.textContent = "";
-//   telefonoMensaje.className = "telefono-mensaje";
-
-//   // Validar que tenga 10 dígitos y empiece con 0
-//   if (!/^0\d{9}$/.test(telefono)) {
-//     telefonoMensaje.textContent = "Número inválido. Debe comenzar con 0 y tener 10 dígitos.";
-//     telefonoMensaje.classList.add("error");
-//     return;
-//   }
-
-//   try {
-//     const res = await fetch(`/api/usuarios/verificacion-whatsapp/${telefono}`);
-
-//     if (!res.ok) throw new Error("Error en verificación");
-
-//     const data = await res.json();
-
-//     const existe = data?.existe === true;
-
-//     if (existe) {
-//       telefonoMensaje.textContent = "Este número SÍ tiene WhatsApp";
-//       telefonoMensaje.classList.add("ok");
-//     } else {
-//       telefonoMensaje.textContent = "Este número NO tiene WhatsApp";
-//       telefonoMensaje.classList.add("error");
-//     }
-//   } catch (e) {
-//     console.error(e);
-//     telefonoMensaje.textContent = "Error al verificar el número.";
-//     telefonoMensaje.classList.add("error");
-//   }
-// }
 
 
 //verificar correo
@@ -272,6 +230,48 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
       title: 'Error',
       text: err.message
     });
+  }
+});
+
+// ── Áreas ─────────────────────────────────────────────────────
+async function cargarAreas() {
+  const cont = document.getElementById('areasExistentes');
+  if (!cont) return;
+  try {
+    const res   = await fetch('/api/usuarios/areas', { credentials: 'include' });
+    const areas = await res.json();
+    cont.innerHTML = areas.length
+      ? areas.map(a => `
+          <span style="background:#e0f2fe;color:#0369a1;font-size:0.78rem;font-weight:600;
+                       padding:4px 14px;border-radius:20px;border:1px solid #bae6fd">
+            ${a.nombre_area}
+          </span>`).join('')
+      : '<span style="font-size:0.82rem;color:#94a3b8">Sin áreas registradas aún.</span>';
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+document.getElementById('areaForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const nombre = document.getElementById('nombreArea').value.trim().toLowerCase();
+  if (!nombre) return;
+
+  try {
+    await apiFetch('/api/usuarios/areas', {
+      method: 'POST',
+      body: JSON.stringify({ nombre_area: nombre })
+    });
+
+    await Swal.fire({ icon: 'success', title: 'Área creada',
+      text: `El área "${nombre}" y su rol fueron registrados.` });
+
+    document.getElementById('areaForm').reset();
+    document.getElementById('areaMensaje').textContent = '';
+    await cargarAreas();
+    await cargarRoles(document.getElementById('rol'));
+  } catch (err) {
+    Swal.fire({ icon: 'error', title: 'Error', text: err.message });
   }
 });
 
