@@ -82,14 +82,16 @@ if (document.getElementById("kpiContainer")) {
 function _renderKPIs(r) {
   const container = document.getElementById("kpiContainer");
   if (!container) return;
-  const nc  = v => v >= 2.4 ? "#16a34a" : v >= 1.8 ? "#f59e0b" : "#dc2626";
-  const ntp = v => v >= 90  ? "#16a34a" : v >= 75  ? "#f59e0b" : "#dc2626";
+  const nc   = v => v >= 2.4 ? "#16a34a" : v >= 1.8 ? "#f59e0b" : "#dc2626";
+  const npct = v => v >= 90  ? "#16a34a" : v >= 75  ? "#f59e0b" : "#dc2626";
   const cards = [
-    { icon: "today",         label: "ATENCIONES HOY",   value: r.total_hoy,                  sub: "registradas hoy",            accent: "#2563eb"             },
-    { icon: "calendar_month",label: "ESTE MES",          value: r.total_mes,                  sub: "atenciones en el mes",       accent: "#7c3aed"             },
-    { icon: "star",          label: "PROMEDIO MES",      value: r.promedio_mes ?? 0,          sub: "de 3.00",                    accent: nc(r.promedio_mes),   small: false },
-    { icon: "schedule",      label: "ATEND. A TIEMPO",   value: `${r.pct_a_tiempo ?? 0}%`,   sub: "puntualidad ≥ Adecuado",     accent: ntp(r.pct_a_tiempo),  small: false },
-    { icon: "emoji_events",  label: "ÁREA DESTACADA",    value: r.mejor_area ?? "—",          sub: `${r.mejor_area_promedio ?? 0} / 3`, accent: "#f59e0b",   small: true  }
+    { icon: "today",              label: "ATENCIONES HOY",  value: r.total_hoy,                sub: "registradas hoy",             accent: "#2563eb"              },
+    { icon: "calendar_month",     label: "ESTE MES",         value: r.total_mes,                sub: "atenciones en el mes",        accent: "#7c3aed"              },
+    { icon: "star",               label: "PROMEDIO MES",     value: r.promedio_mes ?? 0,        sub: "de 3.00",                     accent: nc(r.promedio_mes),    small: false },
+    { icon: "schedule",           label: "ATEND. A TIEMPO",  value: `${r.pct_a_tiempo ?? 0}%`, sub: "puntualidad ≥ Adecuado",      accent: npct(r.pct_a_tiempo),  small: false },
+    { icon: "task_alt",           label: "FCR",              value: `${r.pct_fcr  ?? 0}%`,     sub: "resolución en 1ª atención",   accent: npct(r.pct_fcr),       small: false },
+    { icon: "sentiment_satisfied",label: "CSAT",             value: `${r.pct_csat ?? 0}%`,     sub: "satisfacción general",        accent: npct(r.pct_csat),      small: false },
+    { icon: "emoji_events",       label: "ÁREA DESTACADA",   value: r.mejor_area ?? "—",        sub: `${r.mejor_area_promedio ?? 0} / 3`, accent: "#f59e0b",     small: true  }
   ];
   container.innerHTML = cards.map(c => `
     <div class="kpi-card" style="border-left-color:${c.accent}">

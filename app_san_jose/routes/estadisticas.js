@@ -14,7 +14,9 @@ estadisticasRouter.get('/detalle', async (req, res) => {
         ROUND(AVG(c.puntualidad), 2) AS promedio_puntualidad,
         ROUND(AVG(c.trato), 2) AS promedio_trato,
         ROUND(AVG(c.resolucion), 2) AS promedio_resolucion,
-        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS pct_a_tiempo
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat
       FROM calificaciones c
       JOIN usuarios u ON u.cedula = c.cedula_usuario
       WHERE c.cedula_usuario = ?
@@ -161,31 +163,6 @@ estadisticasRouter.get("/calendario", async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/mi-distribucion', async (req, res) => {
-  const cedula = req.session.user?.cedula;
-  if (!cedula) return res.status(401).json({ message: 'Usuario no autenticado' });
-  try {
-    const [[row]] = await db.query(`
-      SELECT
-        SUM(CASE WHEN puntualidad = 1 THEN 1 ELSE 0 END) AS p1,
-        SUM(CASE WHEN puntualidad = 2 THEN 1 ELSE 0 END) AS p2,
-        SUM(CASE WHEN puntualidad = 3 THEN 1 ELSE 0 END) AS p3,
-        SUM(CASE WHEN trato = 1 THEN 1 ELSE 0 END) AS t1,
-        SUM(CASE WHEN trato = 2 THEN 1 ELSE 0 END) AS t2,
-        SUM(CASE WHEN trato = 3 THEN 1 ELSE 0 END) AS t3,
-        SUM(CASE WHEN resolucion = 1 THEN 1 ELSE 0 END) AS r1,
-        SUM(CASE WHEN resolucion = 2 THEN 1 ELSE 0 END) AS r2,
-        SUM(CASE WHEN resolucion = 3 THEN 1 ELSE 0 END) AS r3
-      FROM calificaciones
-      WHERE cedula_usuario = ?
-        AND TIME(fecha) BETWEEN '07:00:00' AND '14:30:00'
-    `, [cedula]);
-    res.json(row);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al obtener distribución' });
-  }
-});
 
 estadisticasRouter.get('/mis-motivos', async (req, res) => {
   const cedula = req.session.user?.cedula;
@@ -262,7 +239,9 @@ estadisticasRouter.get('/resumen', async (req, res) => {
     const [[mes]] = await db.query(`
       SELECT COUNT(*) AS total,
         ROUND(AVG((puntualidad + trato + resolucion) / 3), 2) AS promedio,
-        ROUND(SUM(CASE WHEN puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS pct_a_tiempo
+        ROUND(SUM(CASE WHEN puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo,
+        ROUND(SUM(CASE WHEN resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN ROUND((puntualidad + trato + resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat
       FROM calificaciones
       WHERE YEAR(fecha) = YEAR(CURDATE()) AND MONTH(fecha) = MONTH(CURDATE())
         AND TIME(fecha) BETWEEN '07:00:00' AND '14:30:00'
@@ -281,6 +260,8 @@ estadisticasRouter.get('/resumen', async (req, res) => {
       total_mes: mes.total,
       promedio_mes: mes.promedio ?? 0,
       pct_a_tiempo: mes.pct_a_tiempo ?? 0,
+      pct_fcr: mes.pct_fcr ?? 0,
+      pct_csat: mes.pct_csat ?? 0,
       mejor_area: mejorArea?.nombre_area ?? '—',
       mejor_area_promedio: mejorArea?.promedio ?? 0
     });

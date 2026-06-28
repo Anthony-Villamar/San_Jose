@@ -208,6 +208,42 @@
           </button>
         </div>
       </form>
+      <!-- Card: Crear Área -->
+      <header class="page-hero" style="background:linear-gradient(135deg,#059669 0%,#065f46 100%);margin-top:28px;margin-bottom:24px">
+        <div class="page-hero__icon">
+          <span class="material-symbols-rounded">domain_add</span>
+        </div>
+        <div>
+          <h1 class="page-hero__title">Crear Nueva Área</h1>
+          <p class="page-hero__subtitle">Registra un área de atención y su rol en el sistema.</p>
+        </div>
+      </header>
+
+      <form id="areaForm" class="form-card">
+        <h3 class="section-title">
+          <span class="section-title__dot"></span> Áreas registradas
+        </h3>
+        <div id="areasExistentes" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;min-height:32px"></div>
+
+        <h3 class="section-title">
+          <span class="section-title__dot"></span> Nueva área
+        </h3>
+        <div class="grid-2">
+          <div class="input-group">
+            <label for="nombreArea">Nombre del área</label>
+            <div class="input-with-icon">
+              <span class="material-symbols-rounded">domain</span>
+              <input type="text" id="nombreArea" maxlength="30" required placeholder="ej: rectorado" />
+            </div>
+            <small id="areaMensaje" style="font-size:0.78rem"></small>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <span class="material-symbols-rounded">add_circle</span> Crear área
+          </button>
+        </div>
+      </form>
     </div>
   </div>
   <script src="../scripts/admin_create.js"></script>

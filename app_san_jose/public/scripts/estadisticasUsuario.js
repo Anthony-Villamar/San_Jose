@@ -1,3 +1,8 @@
+// DPR global — todos los Chart.js heredan la resolución correcta
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.devicePixelRatio = window.devicePixelRatio || 2;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   const spanAnio = document.getElementById('anio');
@@ -29,17 +34,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Cargar todo en paralelo ───────────────────────────────
   try {
-    const [detalle, tendencia, comentarios, distribucion, motivos] = await Promise.all([
+    const [detalle, tendencia, comentarios, motivos] = await Promise.all([
       fetch('/api/estadisticas/detalle',         { credentials: 'include' }).then(r => r.json()),
       fetch('/api/estadisticas/mi-tendencia',    { credentials: 'include' }).then(r => r.json()),
       fetch('/api/estadisticas/mis-comentarios', { credentials: 'include' }).then(r => r.json()),
-      fetch('/api/estadisticas/mi-distribucion', { credentials: 'include' }).then(r => r.json()),
       fetch('/api/estadisticas/mis-motivos',     { credentials: 'include' }).then(r => r.json()),
     ]);
 
     renderStatCards(detalle);
     renderDonuts(detalle);
-    renderDistribucion(distribucion);
     renderMotivos(motivos);
     renderTendenciaPersonal(tendencia);
     renderComentarios(comentarios);
@@ -93,12 +96,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             filtrado.promedio_trato       || 0,
             filtrado.promedio_resolucion  || 0
           ],
-          backgroundColor: ['rgba(37,99,235,.7)', 'rgba(22,163,74,.7)', 'rgba(245,158,11,.7)'],
+          backgroundColor: ['rgba(37,99,235,.45)', 'rgba(22,163,74,.45)', 'rgba(245,158,11,.45)'],
           borderColor:     ['#2563eb', '#16a34a', '#f59e0b'],
           borderWidth: 2
         }]
       },
       options: {
+        devicePixelRatio: window.devicePixelRatio || 2,
         scales:  { r: { suggestedMin: 0, suggestedMax: 3 } },
         plugins: { legend: { position: 'bottom' } }
       }
@@ -226,83 +230,91 @@ document.getElementById('logoutBtn')?.addEventListener('click', async () => {
   } catch (err) { console.error(err); }
 });
 
-// ── Stats cards con comparación de área ───────────────────────
+// ── Stats cards agrupadas (dimensión + KPI) ───────────────────
 function renderStatCards(detalle) {
   const container = document.getElementById('statsGrid');
   if (!container) return;
 
-  const metrics = [
-    { label: 'Puntualidad',          value: detalle.promedio_puntualidad, color: '#2563eb', isBar: true  },
-    { label: 'Trato',                value: detalle.promedio_trato,       color: '#16a34a', isBar: true  },
-    { label: 'Resolución',           value: detalle.promedio_resolucion,  color: '#f59e0b', isBar: true  },
-    { label: 'Total atenciones',     value: detalle.total_atenciones,     color: '#1e3a8a', isBar: false },
-    { label: '% Atendidos a tiempo', value: detalle.pct_a_tiempo,         color: '#0ea5e9', isPct: true  }
+  const groups = [
+    { color: '#2563eb', title: 'Tiempo de atención', avgVal: detalle.promedio_puntualidad },
+    { color: '#f59e0b', title: 'Resolución',          avgVal: detalle.promedio_resolucion  },
+    { color: '#16a34a', title: 'Trato',               avgVal: detalle.promedio_trato       },
   ];
 
-  container.innerHTML = metrics.map(m => {
-    const val = Number(m.value) || 0;
-    let barHTML = '';
-    if (m.isBar) {
-      barHTML = `
-        <div class="stat-bar-track">
-          <div class="stat-bar-fill" style="width:${Math.round((val/3)*100)}%;background:${m.color}"></div>
-        </div>
-        <span class="stat-sub">de 3.00</span>`;
-    } else if (m.isPct) {
-      barHTML = `
-        <div class="stat-bar-track">
-          <div class="stat-bar-fill" style="width:${val}%;background:${m.color}"></div>
-        </div>
-        <span class="stat-sub">de 100%</span>`;
-    }
-    const display = m.isBar ? val.toFixed(2) : m.isPct ? `${val}%` : val;
+  const groupCard = g => {
+    const av = Number(g.avgVal) || 0;
     return `
-      <div class="stat-card" style="border-left-color:${m.color}">
+      <div class="stat-card" style="border-left-color:${g.color}">
         <div class="stat-body">
-          <span class="stat-label">${m.label}</span>
-          <span class="stat-value" style="color:${m.color}">${display}</span>
-          ${barHTML}
+          <span class="stat-label">${g.title}</span>
+          <span class="stat-value" style="color:${g.color}">${av.toFixed(2)}</span>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill" style="width:${Math.round((av/3)*100)}%;background:${g.color}"></div>
+          </div>
+          <span class="stat-sub">de 3.00</span>
         </div>
       </div>`;
-  }).join('');
+  };
+
+  const totalCard = `
+    <div class="stat-card" style="border-left-color:#1e3a8a">
+      <div class="stat-body">
+        <span class="stat-label">Total atenciones</span>
+        <span class="stat-value" style="color:#1e3a8a">${detalle.total_atenciones ?? 0}</span>
+        <span class="stat-sub">registros históricos</span>
+      </div>
+    </div>`;
+
+  container.innerHTML = groups.map(groupCard).join('') + totalCard;
 }
 
-// ── Donuts de métricas ────────────────────────────────────────
+// ── Donuts de KPI con zonas de color acumuladas ───────────────
 function renderDonuts(detalle) {
   const container = document.getElementById('donutsContainer');
   if (!container) return;
 
-  const metrics = [
-    { label: 'Puntualidad', value: detalle.promedio_puntualidad || 0, color: '#2563eb', bg: '#dbeafe' },
-    { label: 'Trato',       value: detalle.promedio_trato       || 0, color: '#16a34a', bg: '#dcfce7' },
-    { label: 'Resolución',  value: detalle.promedio_resolucion  || 0, color: '#f59e0b', bg: '#fef3c7' }
+  // Umbrales por KPI: [inicio_amarillo, inicio_verde]
+  const kpis = [
+    { label: '% A Tiempo', sub: 'Tiempo de atención',   value: Number(detalle.pct_a_tiempo) || 0, t1: 75, t2: 85 },
+    { label: '% FCR',      sub: 'Resolución 1ª vez',    value: Number(detalle.pct_fcr)      || 0, t1: 75, t2: 79 },
+    { label: '% CSAT',     sub: 'Satisfacción general', value: Number(detalle.pct_csat)     || 0, t1: 70, t2: 85 },
   ];
 
-  const nivel = v => v >= 2.34 ? { txt: 'Excelente', c: '#16a34a' } : v >= 1.67 ? { txt: 'Regular', c: '#f59e0b' } : { txt: 'Deficiente', c: '#dc2626' };
+  const color = (v, t1, t2) => v >= t2 ? '#16a34a' : v >= t1 ? '#f59e0b' : '#ef4444';
+  const texto = (v, t1, t2) => v >= t2 ? 'Excelente' : v >= t1 ? 'Aceptable' : 'Por mejorar';
 
-  container.innerHTML = metrics.map((m, i) => `
-    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-      <div style="position:relative;width:130px;height:130px;flex-shrink:0">
-        <canvas id="donut_${i}" style="width:130px!important;height:130px!important"></canvas>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-          <div style="font-size:1.25rem;font-weight:800;color:${m.color};line-height:1">${Number(m.value).toFixed(2)}</div>
-          <div style="font-size:0.6rem;color:#9ca3af;margin-top:2px">de 3.00</div>
+  container.innerHTML = kpis.map((k, i) => {
+    const c = color(k.value, k.t1, k.t2);
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="position:relative;width:130px;height:130px;flex-shrink:0">
+          <canvas id="donut_${i}"></canvas>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
+            <div style="font-size:1.2rem;font-weight:800;color:${c};line-height:1">${k.value}%</div>
+            <div style="font-size:0.58rem;color:#9ca3af;margin-top:2px">${k.label}</div>
+          </div>
         </div>
-      </div>
-      <span style="font-size:0.85rem;font-weight:700;color:#374151;letter-spacing:.3px">${m.label}</span>
-      <span style="font-size:0.72rem;font-weight:600;color:${nivel(m.value).c}">${nivel(m.value).txt}</span>
-    </div>
-  `).join('');
+        <span style="font-size:0.85rem;font-weight:700;color:#374151;letter-spacing:.3px">${k.sub}</span>
+        <span style="font-size:0.72rem;font-weight:600;color:${c}">${texto(k.value, k.t1, k.t2)}</span>
+      </div>`;
+  }).join('');
 
-  metrics.forEach((m, i) => {
-    const val = Math.min(Number(m.value) || 0, 3);
+  kpis.forEach((k, i) => {
+    // Segmentos acumulados según umbrales propios de cada KPI
+    const v     = Math.min(k.value, 100);
+    const red   = Math.min(v, k.t1);
+    const amber = Math.max(0, Math.min(v, k.t2) - k.t1);
+    const green = Math.max(0, v - k.t2);
+    const empty = Math.max(0, 100 - v);
+
     new Chart(document.getElementById(`donut_${i}`), {
       type: 'doughnut',
       data: {
         datasets: [{
-          data: [val, 3 - val],
-          backgroundColor: [m.color, m.bg],
-          borderWidth: 0,
+          data: [red, amber, green, empty],
+          backgroundColor: ['#ef4444', '#f59e0b', '#16a34a', '#e5e7eb'],
+          borderWidth: 2,
+          borderColor: '#fff',
           hoverOffset: 0
         }]
       },
@@ -310,35 +322,11 @@ function renderDonuts(detalle) {
         cutout: '76%',
         responsive: true,
         maintainAspectRatio: false,
+        devicePixelRatio: window.devicePixelRatio || 2,
         animation: { animateRotate: true, duration: 900, easing: 'easeOutQuart' },
         plugins: { legend: { display: false }, tooltip: { enabled: false } }
       }
     });
-  });
-}
-
-// ── Distribución de calificaciones ────────────────────────────
-function renderDistribucion(data) {
-  const canvas = document.getElementById('distribucionChart');
-  if (!canvas) return;
-  new Chart(canvas.getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: ['Bajo (1)', 'Regular (2)', 'Excelente (3)'],
-      datasets: [
-        { label: 'Puntualidad', data: [data.p1, data.p2, data.p3], backgroundColor: 'rgba(37,99,235,.75)',   borderRadius: 4 },
-        { label: 'Trato',       data: [data.t1, data.t2, data.t3], backgroundColor: 'rgba(22,163,74,.75)',   borderRadius: 4 },
-        { label: 'Resolución',  data: [data.r1, data.r2, data.r3], backgroundColor: 'rgba(245,158,11,.75)',  borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
-        x: { grid: { display: false } }
-      }
-    }
   });
 }
 
@@ -351,6 +339,7 @@ function renderMotivos(data) {
     canvas.closest('.graficos').insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);padding:14px 0;font-size:.85rem">Sin datos de motivos.</p>');
     return;
   }
+  canvas.style.height = `${Math.max(180, data.length * 42)}px`;
   new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
@@ -366,6 +355,7 @@ function renderMotivos(data) {
     options: {
       indexAxis: 'y',
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
@@ -385,6 +375,7 @@ function renderTendenciaPersonal(data) {
     canvas.closest('.graficos').insertAdjacentHTML('beforeend', '<p style="text-align:center;color:var(--muted);padding:14px 0;font-size:.85rem">Sin datos en los últimos 30 días.</p>');
     return;
   }
+  canvas.style.height = '240px';
   if (_tendenciaChart) _tendenciaChart.destroy();
   _tendenciaChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
@@ -398,6 +389,7 @@ function renderTendenciaPersonal(data) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } },
       scales: {
         y: { min: 0, max: 3, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
