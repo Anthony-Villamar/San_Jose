@@ -1,6 +1,7 @@
 import express from 'express';
 import db from './db.js';
 import bcrypt from 'bcrypt';
+import { verificarSesion } from '../middleware/sesions.js';
 
 const usuariosRouter = express.Router();
 
@@ -28,7 +29,7 @@ const fetchConTimeout = async (url, options = {}, timeout = 8000) => {
   }
 };
 
-usuariosRouter.get('/', async (req, res) => {
+usuariosRouter.get('/', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT cedula, nombre FROM personas');
     res.json(rows);
@@ -215,7 +216,7 @@ usuariosRouter.get('/buscar-con-roles/:cedula', async (req, res) => {
   }
 });
 
-usuariosRouter.get('/roles', async (req, res) => {
+usuariosRouter.get('/roles', verificarSesion, async (req, res) => {
   try {
     const [roles] = await db.query('SELECT nombre_rol FROM roles');
     const rolesNombres = roles.map(r => r.nombre_rol);
@@ -258,7 +259,7 @@ usuariosRouter.patch('/:cedula/activar', async (req, res) => {
   }
 });
 
-usuariosRouter.get('/admin-list', async (req, res) => {
+usuariosRouter.get('/admin-list', verificarSesion, async (req, res) => {
   const { estado, rol } = req.query;
 
   const where = [];
@@ -412,7 +413,7 @@ usuariosRouter.get("/verificacion-email/:correo", async (req, res) => {
   }
 });
 
-usuariosRouter.get('/areas', async (req, res) => {
+usuariosRouter.get('/areas', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT id_area, nombre_area FROM areas ORDER BY id_area');
     res.json(rows);
@@ -453,7 +454,7 @@ usuariosRouter.post('/areas', async (req, res) => {
   }
 });
 
-usuariosRouter.get('/area/:area', async (req, res) => {
+usuariosRouter.get('/area/:area', verificarSesion, async (req, res) => {
   const { area } = req.params;
 
   try {

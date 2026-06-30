@@ -63,7 +63,7 @@ encuestasRouter.post('/', async (req, res) => {
 
   } catch (err) {
     console.error("Error guardando encuesta:", err);
-    res.status(500).json({ success: false });
+    res.status(500).json({ success: false, error: "Error al guardar encuesta" });
   }
 });
 
