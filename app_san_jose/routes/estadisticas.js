@@ -1,5 +1,6 @@
 import express from 'express';
 import db from './db.js';
+import { verificarSesion } from '../middleware/sesions.js';
 
 const estadisticasRouter = express.Router();
 
@@ -31,7 +32,7 @@ estadisticasRouter.get('/detalle', async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/top3', async (req, res) => {
+estadisticasRouter.get('/top3', verificarSesion, async (req, res) => {
   try {
     const sql = `
       SELECT
@@ -118,7 +119,7 @@ estadisticasRouter.get('/detalle/promedio', async (req, res) => {
   }
 });
 
-estadisticasRouter.get("/calendario", async (req, res) => {
+estadisticasRouter.get("/calendario", verificarSesion, async (req, res) => {
   try {
     const { inicio, fin, area } = req.query;
 
@@ -229,7 +230,7 @@ estadisticasRouter.get('/mis-comentarios', async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/resumen', async (req, res) => {
+estadisticasRouter.get('/resumen', verificarSesion, async (req, res) => {
   try {
     const [[hoy]] = await db.query(`
       SELECT COUNT(*) AS total FROM calificaciones
@@ -271,7 +272,7 @@ estadisticasRouter.get('/resumen', async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/tendencia', async (req, res) => {
+estadisticasRouter.get('/tendencia', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT DATE(fecha) AS dia, COUNT(*) AS total
@@ -287,7 +288,7 @@ estadisticasRouter.get('/tendencia', async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/por-area', async (req, res) => {
+estadisticasRouter.get('/por-area', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT a.nombre_area,
@@ -307,7 +308,7 @@ estadisticasRouter.get('/por-area', async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/por-dia-semana', async (req, res) => {
+estadisticasRouter.get('/por-dia-semana', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT DAYOFWEEK(fecha) AS dia_num, COUNT(*) AS total

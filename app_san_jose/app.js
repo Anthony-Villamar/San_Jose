@@ -11,8 +11,8 @@ import encuestasRouter from './routes/encuestas.js';
 import estadisticasRouter from './routes/estadisticas.js';
 import usuariosRouter from './routes/usuarios.js';
 import { verificarSesion } from './middleware/sesions.js';
+import { verificarRol } from './middleware/roles.js';
 import iaRouter from './routes/ia.js';
-import verifyRouter from "./routes/twilio.js";
 import reportesRouter from "./routes/reportesPDF.js";
 
 // Config
@@ -60,7 +60,6 @@ app.use('/api/encuestas', encuestasRouter);
 app.use('/api/estadisticas', estadisticasRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api', iaRouter);
-app.use("/api/twilio", verifyRouter);
 app.use("/api/reportes", reportesRouter);
 
 
@@ -68,28 +67,28 @@ app.use("/api/reportes", reportesRouter);
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-app.get('/administrador',verificarSesion, (req, res) => {
+app.get('/administrador', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador.html"));
 });
-app.get('/administrador_analisis',verificarSesion, (req, res) => {
+app.get('/administrador_analisis', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador_analisis.html"));
 });
-app.get('/administrador_create',verificarSesion, (req, res) => {
+app.get('/administrador_create', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador_create.html"));
 });
-app.get('/administrador_update',verificarSesion, (req, res) => {
+app.get('/administrador_update', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador_update.html"));
 });
-app.get('/administrador_deactivation',verificarSesion, (req, res) => {
+app.get('/administrador_deactivation', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador_deactivation.html"));
 });
-app.get('/area_secretaria',verificarSesion, (req, res) => {
+app.get('/area_secretaria', verificarRol('secretaria', 'administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","area_secretaria.html"));
 });
-app.get('/area_colecturia',verificarSesion, (req, res) => {
+app.get('/area_colecturia', verificarRol('colecturia', 'administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","area_colecturia.html"));
 });
-app.get('/area_docente',verificarSesion, (req, res) => {
+app.get('/area_docente', verificarRol('docente', 'administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","area_docente.html"));
 });
 app.get('/secretaria', (req, res) => {
