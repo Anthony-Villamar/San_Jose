@@ -131,7 +131,6 @@ estadisticasRouter.get("/calendario", verificarSesion, async (req, res) => {
       const areaId =
         area === "secretaria" ? 1 :
         area === "colecturia" ? 2 :
-        area === "docente" ? 3 :
         null;
 
       if (areaId) {

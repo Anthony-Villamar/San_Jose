@@ -88,9 +88,6 @@ app.get('/area_secretaria', verificarRol('secretaria', 'administrador'), (req, r
 app.get('/area_colecturia', verificarRol('colecturia', 'administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","area_colecturia.html"));
 });
-app.get('/area_docente', verificarRol('docente', 'administrador'), (req, res) => {
-  res.sendFile(path.join(__dirname, "public","pages","area_docente.html"));
-});
 app.get('/secretaria', (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","encuesta_secretaria.html"));
 });

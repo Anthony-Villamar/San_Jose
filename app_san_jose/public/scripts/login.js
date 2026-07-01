@@ -53,8 +53,6 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
     if (respuesta.ok) {
       alert(respuesta.message);
-
-      // Ya no guardo en sessionStorage, sino que pregunto al backend
       const me = await fetch("/api/login/me", {
         credentials: "include"
        }).then(r => r.json());
@@ -63,14 +61,9 @@ document.getElementById('loginForm').addEventListener('submit', async function (
         window.location.href = "/administrador";
       } else if (me.rol === 'secretaria') {
         window.location.href = "/area_secretaria";
-      } else if (me.rol === 'docente') {
-        window.location.href = "/area_docente";
       } else if (me.rol === 'colecturia') {
         window.location.href = "/area_colecturia";
       } 
-      // else if (me.rol.startsWith('evaluador')) {
-      //   window.location.href = "/encuestas";
-      // } 
       else {
         alert("Rol no reconocido.");
       }
