@@ -1,3 +1,4 @@
+// Ruta para manejar las estadísticas de calificaciones de los colaboradores.
 import express from 'express';
 import db from './db.js';
 import { verificarSesion } from '../middleware/sesions.js';
@@ -272,21 +273,6 @@ estadisticasRouter.get('/resumen', verificarSesion, async (req, res) => {
   }
 });
 
-estadisticasRouter.get('/tendencia', verificarSesion, async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT DATE(fecha) AS dia, COUNT(*) AS total
-      FROM calificaciones
-      WHERE DATE(fecha) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-        AND TIME(fecha) BETWEEN '07:00:00' AND '14:30:00'
-      GROUP BY dia ORDER BY dia
-    `);
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al obtener tendencia' });
-  }
-});
 
 estadisticasRouter.get('/por-area', verificarSesion, async (req, res) => {
   try {

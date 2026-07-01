@@ -1,8 +1,8 @@
+// Ruta para manejar la encuesta de satisfacción dirigida a los padres de familia.
 import express from 'express';
 import db from './db.js';
 
 const encuestasRouter = express.Router();
-
 
 encuestasRouter.post('/', async (req, res) => {
   const {
@@ -16,22 +16,14 @@ encuestasRouter.post('/', async (req, res) => {
     id_motivo
   } = req.body;
 
-  
-
-  // Validación mínima
   if (
-    !area_atencion ||
-    !atendido_por ||
-    !puntualidad ||
-    !trato ||
-    !resolucion ||
-    !id_motivo
+    !area_atencion || !atendido_por || !puntualidad || !trato ||
+    !resolucion || !id_motivo
   ) {
     return res.status(400).json({ success: false, error: "Datos incompletos" });
   }
 
   try {
-
     // Obtener ID del área desde la BD
     const [[areaRow]] = await db.query(
       `SELECT id_area FROM areas WHERE nombre_area = ?`,
@@ -41,7 +33,6 @@ encuestasRouter.post('/', async (req, res) => {
     if (!areaRow) {
       return res.status(400).json({ success: false, message: "Área inválida" });
     }
-
     const sql = `
       INSERT INTO calificaciones
       (cedula_usuario, area_atencion, fecha, puntualidad, trato, resolucion, comentario, id_motivo)
@@ -60,7 +51,6 @@ encuestasRouter.post('/', async (req, res) => {
     ]);
 
     res.json({ success: true });
-
   } catch (err) {
     console.error("Error guardando encuesta:", err);
     res.status(500).json({ success: false, error: "Error al guardar encuesta" });
@@ -77,13 +67,11 @@ encuestasRouter.get('/motivos/:area', async (req, res) => {
       JOIN areas a ON m.id_area = a.id_area
       WHERE a.nombre_area = ?
     `, [area]);
-
     res.json(rows);
   } catch (err) {
     console.error("Error cargando motivos:", err);
     res.status(500).json({ error: "Error al obtener motivos" });
   }
 });
-
 
 export default encuestasRouter;

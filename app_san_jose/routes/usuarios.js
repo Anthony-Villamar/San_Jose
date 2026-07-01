@@ -1,3 +1,4 @@
+// Rutas para la gestión de usuarios, incluyendo registro, actualización, búsqueda y verificación de datos.
 import express from 'express';
 import db from './db.js';
 import bcrypt from 'bcrypt';
@@ -29,15 +30,6 @@ const fetchConTimeout = async (url, options = {}, timeout = 8000) => {
   }
 };
 
-usuariosRouter.get('/', verificarSesion, async (req, res) => {
-  try {
-    const [rows] = await db.execute('SELECT cedula, nombre FROM personas');
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error al obtener usuarios" });
-  }
-});
 
 usuariosRouter.post('/registrar', async (req, res) => {
   const {
@@ -165,29 +157,6 @@ usuariosRouter.patch('/:cedula', async (req, res) => {
   }
 });
 
-usuariosRouter.get('/buscar/:cedula', async (req, res) => {
-  const cedula = req.params.cedula;
-  try {
-    const [[row]] = await db.query(`
-      SELECT p.nombre, p.apellido, p.correo, p.telefono,
-             u.usuario, r.nombre_rol AS rol
-      FROM personas p
-      JOIN usuarios u ON p.cedula = u.cedula
-      JOIN roles r ON u.id_rol = r.id_rol
-      WHERE p.cedula = ?
-      AND u.estado = 'activo'
-    `, [cedula]);
-
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
-    }
-
-    res.json(row);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Error al buscar usuario' });
-  }
-});
 
 usuariosRouter.get('/buscar-con-roles/:cedula', async (req, res) => {
   const cedula = req.params.cedula;
@@ -474,25 +443,5 @@ usuariosRouter.get('/area/:area', verificarSesion, async (req, res) => {
   }
 });
 
-usuariosRouter.get("/:rolfetch", async (req, res) => {
-  const rol = req.params.rolfetch;
-  try {
-    const [usuarios] = await db.query(`
-      SELECT p.cedula, p.nombre, p.apellido
-      FROM personas p
-      JOIN usuarios u ON p.cedula = u.cedula
-      JOIN roles r ON u.id_rol = r.id_rol
-      WHERE r.nombre_rol = ?
-      AND u.estado = 'activo'
-      AND u.cedula NOT IN ('0000000001', '0000000002', '0000000003')
-    `, [rol]);
-
-    res.json(usuarios);
-
-  } catch (error) {
-    console.error("Error al obtener usuarios por rol:", error);
-    res.status(500).json({ error: "Error al obtener usuarios por rol" });
-  }
-});
 
 export default usuariosRouter;
