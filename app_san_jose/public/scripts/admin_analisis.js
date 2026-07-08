@@ -114,19 +114,19 @@ function renderSingleMonth(dom, data, inicio, fin) {
     center: [d.dia.split('T')[0], 1],
     radius: M.pieR,
     coordinateSystem: 'calendar',
-    label: { formatter: '{c}', position: 'inside', fontSize: Math.max(9, M.font - 2) },
+    label: { formatter: p => `${p.value}%`, position: 'inside', fontSize: Math.max(8, M.font - 3) },
     data: [
-      { name: 'Puntualidad', value: +d.puntualidad },
-      { name: 'Trato', value: +d.trato },
-      { name: 'Resolución', value: +d.resolucion }
+      { name: 'CSAT',      value: +(d.pct_csat     ?? 0) },
+      { name: 'FCR',       value: +(d.pct_fcr      ?? 0) },
+      { name: '% A Tiempo',value: +(d.pct_a_tiempo ?? 0) }
     ]
   }));
 
   chart.setOption({
     title: { text: monthTitle, left: 'center', top: 10, textStyle: { fontSize: Math.max(12, M.font + 2) } },
-    tooltip: { confine: true, formatter: p => p.seriesType === 'pie' ? `${p.name}: ${p.value}` : p.value[0] },
+    tooltip: { confine: true, formatter: p => p.seriesType === 'pie' ? `${p.name}: ${p.value}%` : p.value[0] },
     legend: {
-      data: ['Puntualidad', 'Trato', 'Resolución'],
+      data: ['CSAT', 'FCR', '% A Tiempo'],
       bottom: 8,
       itemGap: 14,
       itemWidth: 16,
@@ -141,7 +141,7 @@ function renderSingleMonth(dom, data, inicio, fin) {
       cellSize: [M.cellW, M.cellW],
       splitLine: { show: true, lineStyle: { color: '#e5ecf6' } },
       yearLabel: { show: false }, monthLabel: { show: false, nameMap: 'es' }, dayLabel: { show: true, nameMap: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'], firstDay: 1, fontSize: Math.max(9, M.font - 2), color: '#64748b' },
-      bottom: M.legendSpace,      // <-- clave: acercar calendario a la leyenda
+      bottom: M.legendSpace,
       range: [inicio, fin]
     },
     series: [
@@ -219,130 +219,3 @@ document.getElementById("btn-regenerar").addEventListener("click", () => {
     window.open(url, "_blank");
   };
 });
-
-
-// function renderSingleMonth(dom, data, inicio, fin) {
-//   // --- helpers responsivos ---
-//   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-//   // cuántas filas (semanas) ocupa ese mes (5 o 6 normalmente)
-//   function weeksInMonth(d1, d2) {
-//     const first = new Date(d1.getFullYear(), d1.getMonth(), 1);
-//     const last  = new Date(d1.getFullYear(), d1.getMonth() + 1, 0);
-//     const firstDow = (first.getDay() + 6) % 7; // L=0..D=6 (formato ISO)
-//     const days = last.getDate();
-//     return Math.ceil((firstDow + days) / 7);
-//   }
-
-//   function metrics() {
-//     const w = dom.clientWidth || window.innerWidth;
-//     // ancho útil para 7 días con márgenes internos
-//     const padX = 24; // padding/márgen visual
-//     let cellW = Math.floor((w - padX * 2) / 7);
-//     cellW = clamp(cellW, 40, 140);         // nunca más chico de 40px ni más grande de 140px
-//     const pieR = Math.floor(cellW * 0.36); // radio pie proporcional a celda
-//     const font  = Math.max(10, Math.floor(cellW * 0.18));
-//     const rows  = weeksInMonth(inicio, fin);
-//     const header = 64;                     // espacio para año/mes
-//     const h = header + rows * cellW + 24;  // alto total del chart
-//     return { cellW, pieR, font, h };
-//   }
-//    // ---- NUEVO: título "Mes Año" ----
-//   const monthTitle =
-//     inicio.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-//           .replace(/^\w/, c => c.toUpperCase());
-
-//   let M = metrics();
-//   dom.style.height = M.h + "px";
-
-//   const myChart = echarts.init(dom);
-//   myChart.clear();
-
-//   const scatterData = data.map(d => [d.dia.split("T")[0], 1]);
-
-//   // series pie por día, con radio proporcional
-//   const pieSeries = data.map((d, idx) => ({
-//     type: "pie",
-//     id: "pie-" + idx,
-//     center: [d.dia.split("T")[0], 1],
-//     radius: M.pieR,
-//     coordinateSystem: "calendar",
-//     label: { formatter: "{c}", position: "inside", fontSize: Math.max(9, M.font - 2) },
-//     data: [
-//       { name: "Puntualidad", value: +d.puntualidad },
-//       { name: "Trato",       value: +d.trato },
-//       { name: "Resolución",  value: +d.resolucion }
-//     ]
-//   }));
-
-//   myChart.setOption({
-//         title: { text: monthTitle, left: "center", top: 10, textStyle: { fontSize: Math.max(12, M.font + 2) } },
-
-//     tooltip: { confine: true, formatter: p => p.seriesType === "pie" ? `${p.name}: ${p.value}` : p.value[0] },
-//     legend: {
-//       data: ["Puntualidad", "Trato", "Resolución"],
-//       bottom: 6,
-//       textStyle: { fontSize: Math.max(9, M.font - 2) }
-//     },
-//     calendar: {
-//       top: 50,
-//       left: "center",
-//       orient: "vertical",
-//       cellSize: [M.cellW, M.cellW],      // ← tamaño real por día
-//       splitLine: { show: true, lineStyle: { color: "#e5ecf6" } },
-//       yearLabel:  { show: false, fontSize: Math.max(12, M.font), color: "#000", margin: 6 },
-//       monthLabel: { show: false, nameMap: "es", fontSize: Math.max(12, M.font), color: "#000", margin: 6 },
-//       dayLabel:   { show: false },
-//       range: [inicio, fin]
-//     },
-//     series: [
-//       {
-//         id: "label",
-//         type: "scatter",
-//         coordinateSystem: "calendar",
-//         symbolSize: 0,
-//         label: {
-//           show: true,
-//           align: "left",
-//           verticalAlign: "top",
-//           // número del día en esquina superior izquierda de la celda
-//           formatter: p => p.value[0].split("-")[2],
-//           offset: [-(M.cellW / 2) + 6, -(M.cellW / 2) + 6],
-//           fontSize: Math.max(11, M.font)
-//         },
-//         data: scatterData
-//       },
-//       ...pieSeries
-//     ]
-//   });
-
-//   // re-cálculo real al cambiar tamaño del contenedor
-//   const ro = new ResizeObserver(() => {
-//     M = metrics();
-//     dom.style.height = M.h + "px";
-//     // actualizar cellSize, fuentes y radios sin reconstruir todo
-//     myChart.setOption({
-//       legend: { textStyle: { fontSize: Math.max(9, M.font - 2) } },
-//       calendar: { cellSize: [M.cellW, M.cellW] },
-//       series: [
-//         {
-//           id: "label",
-//           label: {
-//             offset: [-(M.cellW / 2) + 6, -(M.cellW / 2) + 6],
-//             fontSize: Math.max(11, M.font)
-//           }
-//         },
-//         ...data.map((d, idx) => ({
-//           id: "pie-" + idx,
-//           radius: M.pieR,
-//           label: { fontSize: Math.max(9, M.font - 2) }
-//         }))
-//       ]
-//     });
-//     myChart.resize();
-//   });
-//   ro.observe(dom);
-
-//   window.addEventListener("resize", () => myChart.resize(), { passive: true });
-// }
-

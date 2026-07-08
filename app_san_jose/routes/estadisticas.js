@@ -69,9 +69,13 @@ estadisticasRouter.get('/detalle/diario', async (req, res) => {
     const sql = `
       SELECT
         DATE(c.fecha) AS fecha,
+        COUNT(*) AS total,
         ROUND(AVG(c.puntualidad), 2) AS promedio_puntualidad,
         ROUND(AVG(c.trato), 2) AS promedio_trato,
-        ROUND(AVG(c.resolucion), 2) AS promedio_resolucion
+        ROUND(AVG(c.resolucion), 2) AS promedio_resolucion,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo
       FROM calificaciones c
       WHERE c.cedula_usuario = ?
         AND TIME(c.fecha) BETWEEN '07:00:00' AND '14:30:00'
@@ -102,9 +106,13 @@ estadisticasRouter.get('/detalle/promedio', async (req, res) => {
   try {
     const sql = `
       SELECT
+        COUNT(*) AS total,
         ROUND(AVG(c.puntualidad), 2) AS promedio_puntualidad,
         ROUND(AVG(c.trato), 2) AS promedio_trato,
-        ROUND(AVG(c.resolucion), 2) AS promedio_resolucion
+        ROUND(AVG(c.resolucion), 2) AS promedio_resolucion,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo
       FROM calificaciones c
       WHERE c.cedula_usuario = ?
         AND DATE(c.fecha) BETWEEN ? AND ?
@@ -146,7 +154,10 @@ estadisticasRouter.get("/calendario", verificarSesion, async (req, res) => {
         COUNT(*) AS total,
         ROUND(AVG(c.puntualidad), 2) AS puntualidad,
         ROUND(AVG(c.trato), 2) AS trato,
-        ROUND(AVG(c.resolucion), 2) AS resolucion
+        ROUND(AVG(c.resolucion), 2) AS resolucion,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo
       FROM calificaciones c
       WHERE DATE(c.fecha) BETWEEN ? AND ?
         AND TIME(c.fecha) BETWEEN '07:00:00' AND '14:30:00'

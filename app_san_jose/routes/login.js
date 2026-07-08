@@ -1,10 +1,10 @@
+// Rutas de login y manejo de sesión
 import { Router } from 'express';
 import db from './db.js';
 import bcrypt from 'bcrypt';
 
 const loginRoutes = Router();
 
-// Iniciar sesión
 loginRoutes.post('/', async (req, res) => {
   const { usuario, contrasena } = req.body;
 
@@ -33,7 +33,7 @@ loginRoutes.post('/', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'Credenciales incorrectas.' });
     }
 
-    // 3. Guardar usuario en la sesión (sin contraseña)
+    // 3. Guardar usuario en la sesión sin la contraseña
     req.session.user = {
       cedula: usuarioEncontrado.cedula,
       usuario: usuarioEncontrado.usuario,

@@ -37,7 +37,7 @@ usuariosRouter.post('/registrar', async (req, res) => {
     contrasena, rol, correo, telefono
   } = req.body;
 
-  if (!cedula_usuario || !nombre || !apellido || !usuario || !contrasena || !rol || !correo || !telefono) {
+  if (!cedula_usuario || !nombre || !apellido || !usuario || !contrasena || !correo || !telefono) {
     return res.status(400).json({ error: "Faltan datos obligatorios." });
   }
 
@@ -54,10 +54,14 @@ usuariosRouter.post('/registrar', async (req, res) => {
                               telefono = VALUES(telefono)
     `, [cedula_usuario, nombre, apellido, correo || null, telefono || null]);
 
-    const [[rolRow]] = await conn.query(`SELECT id_rol FROM roles WHERE nombre_rol = ?`, [rol]);
-    if (!rolRow) {
-      await conn.rollback();
-      return res.status(400).json({ error: "Rol no válido." });
+    let rolId = null;
+    if (rol) {
+      const [[rolRow]] = await conn.query(`SELECT id_rol FROM roles WHERE nombre_rol = ?`, [rol]);
+      if (!rolRow) {
+        await conn.rollback();
+        return res.status(400).json({ error: "Rol no válido." });
+      }
+      rolId = rolRow.id_rol;
     }
 
     const hashedPassword = await bcrypt.hash(contrasena, 10);
@@ -65,7 +69,7 @@ usuariosRouter.post('/registrar', async (req, res) => {
     await conn.query(`
       INSERT INTO usuarios (cedula, usuario, contrasena, id_rol)
       VALUES (?, ?, ?, ?)
-    `, [cedula_usuario, usuario, hashedPassword, rolRow.id_rol]);
+    `, [cedula_usuario, usuario, hashedPassword, rolId]);
 
     await conn.commit();
     res.status(201).json({ success: true, message: "Usuario registrado correctamente." });
@@ -165,7 +169,7 @@ usuariosRouter.get('/buscar-con-roles/:cedula', async (req, res) => {
       `SELECT u.usuario, p.nombre, p.apellido, p.correo, p.telefono, r.nombre_rol AS rol
        FROM usuarios u
        JOIN personas p ON u.cedula = p.cedula
-       JOIN roles r ON u.id_rol = r.id_rol
+       LEFT JOIN roles r ON u.id_rol = r.id_rol
        WHERE u.cedula = ?
        AND u.estado = 'activo'`,
       [cedula]

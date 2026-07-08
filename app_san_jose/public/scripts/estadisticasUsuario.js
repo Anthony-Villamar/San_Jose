@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const spanAnio = document.getElementById('anio');
   if (spanAnio) spanAnio.textContent = new Date().getFullYear();
 
-  // ── Sesión ────────────────────────────────────────────────
+  // Sesión 
   let usuario;
   try {
     const res = await fetch('/api/login/me', { credentials: 'include' });
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   document.getElementById('nombreUsuario').textContent = usuario.usuario;
 
-  // ── Tipo de filtro ────────────────────────────────────────
+  // Tipo de filtro 
   const tipoFiltro  = document.getElementById('tipoFiltro');
   const filtroUnico = document.getElementById('filtroFechaUnica');
   const filtroRango = document.getElementById('filtroRangoFechas');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filtroRango.style.display = esRango ? 'block' : 'none';
   });
 
-  // ── Cargar todo en paralelo ───────────────────────────────
+  // Cargar todo en paralelo 
   try {
     const [detalle, tendencia, comentarios, motivos] = await Promise.all([
       fetch('/api/estadisticas/detalle',         { credentials: 'include' }).then(r => r.json()),
@@ -52,24 +52,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Error cargando datos:', err);
   }
 
-  // ── Filtro por día / rango ────────────────────────────────
+  // Filtro por día / rango 
   let graficoPastel = null;
 
   function mostrarDatosYGrafico(filtrado, titulo) {
     const container = document.getElementById('estadisticasDiarias');
 
-    const miniCard = (label, value, color) => {
+    const kpiCard = (label, value, color) => {
       const val = Number(value) || 0;
-      const pct = Math.round((val / 3) * 100);
       return `
         <div class="stat-card" style="border-left-color:${color}">
           <div class="stat-body">
             <span class="stat-label">${label}</span>
-            <span class="stat-value" style="color:${color};font-size:1.3rem">${val.toFixed(2)}</span>
+            <span class="stat-value" style="color:${color};font-size:1.3rem">${val}%</span>
             <div class="stat-bar-track">
-              <div class="stat-bar-fill" style="width:${pct}%;background:${color}"></div>
+              <div class="stat-bar-fill" style="width:${val}%;background:${color}"></div>
             </div>
-            <span class="stat-sub">de 3.00</span>
+            <span class="stat-sub">de 100%</span>
           </div>
         </div>`;
     };
@@ -77,9 +76,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     container.innerHTML = `
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;font-weight:600">${titulo}</p>
       <div class="stats-grid">
-        ${miniCard('Puntualidad', filtrado.promedio_puntualidad, '#2563eb')}
-        ${miniCard('Trato',       filtrado.promedio_trato,       '#16a34a')}
-        ${miniCard('Resolución',  filtrado.promedio_resolucion,  '#f59e0b')}
+        ${kpiCard('CSAT',       filtrado.pct_csat,     '#2563eb')}
+        ${kpiCard('FCR',        filtrado.pct_fcr,      '#16a34a')}
+        ${kpiCard('% A Tiempo', filtrado.pct_a_tiempo, '#f59e0b')}
       </div>`;
 
     const canvas = document.getElementById('graficoPastel');
@@ -89,12 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     graficoPastel = new Chart(canvas.getContext('2d'), {
       type: 'polarArea',
       data: {
-        labels: ['Puntualidad', 'Trato', 'Resolución'],
+        labels: ['CSAT', 'FCR', '% A Tiempo'],
         datasets: [{
           data: [
-            filtrado.promedio_puntualidad || 0,
-            filtrado.promedio_trato       || 0,
-            filtrado.promedio_resolucion  || 0
+            Number(filtrado.pct_csat)     || 0,
+            Number(filtrado.pct_fcr)      || 0,
+            Number(filtrado.pct_a_tiempo) || 0
           ],
           backgroundColor: ['rgba(37,99,235,.45)', 'rgba(22,163,74,.45)', 'rgba(245,158,11,.45)'],
           borderColor:     ['#2563eb', '#16a34a', '#f59e0b'],
@@ -103,8 +102,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       options: {
         devicePixelRatio: window.devicePixelRatio || 2,
-        scales:  { r: { suggestedMin: 0, suggestedMax: 3 } },
-        plugins: { legend: { position: 'bottom' } }
+        scales:  { r: { suggestedMin: 0, suggestedMax: 100, ticks: { callback: v => `${v}%` } } },
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } }
+        }
       }
     });
   }
@@ -150,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('fechaFiltro').value = new Date().toISOString().slice(0, 10);
 
-  // ── Reporte personal ──────────────────────────────────────
+  //  Reporte personal 
   document.getElementById('btnGenerarReporte')?.addEventListener('click', () => {
     const inicio = document.getElementById('reporteInicio').value;
     const fin    = document.getElementById('reporteFin').value;
@@ -162,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btnDescargarReporte').onclick = () => window.open(url, '_blank');
   });
 
-  // ── Modal editar perfil ───────────────────────────────────
+  // Modal editar perfil 
   const editBtn = document.getElementById('editPerfilBtn');
   const modal   = document.getElementById('editModal');
   const emClose = document.getElementById('emClose');
@@ -186,6 +188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!nuevoUsuario && !nuevaPass)
       return Swal.fire('Sin cambios', 'Ingresa un nuevo usuario o contraseña.', 'info');
+    if (nuevoUsuario && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+$/.test(nuevoUsuario))
+      return Swal.fire('Error', 'El usuario solo puede contener letras, sin números ni caracteres especiales.', 'error');
+    if (nuevaPass && !/^[a-zA-Z0-9]+$/.test(nuevaPass))
+      return Swal.fire('Error', 'La contraseña solo puede contener letras y números.', 'error');
     if (nuevaPass && nuevaPass !== confirmPass)
       return Swal.fire('Error', 'Las contraseñas no coinciden.', 'error');
     if (nuevaPass && nuevaPass.length < 6)
@@ -221,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
-// ── Logout ────────────────────────────────────────────────────
+// Logout 
 document.getElementById('logoutBtn')?.addEventListener('click', async () => {
   try {
     const res  = await fetch('/api/login/logout', { method: 'POST', credentials: 'include' });
@@ -230,7 +236,7 @@ document.getElementById('logoutBtn')?.addEventListener('click', async () => {
   } catch (err) { console.error(err); }
 });
 
-// ── Stats cards agrupadas (dimensión + KPI) ───────────────────
+// Stats cards agrupadas (dimensión + KPI) 
 function renderStatCards(detalle) {
   const container = document.getElementById('statsGrid');
   if (!container) return;
@@ -268,7 +274,7 @@ function renderStatCards(detalle) {
   container.innerHTML = groups.map(groupCard).join('') + totalCard;
 }
 
-// ── Donuts de KPI con zonas de color acumuladas ───────────────
+//  Donuts de KPI con zonas de color acumuladas 
 function renderDonuts(detalle) {
   const container = document.getElementById('donutsContainer');
   if (!container) return;
@@ -330,7 +336,7 @@ function renderDonuts(detalle) {
   });
 }
 
-// ── Motivos más atendidos ─────────────────────────────────────
+//  Motivos más atendidos 
 function renderMotivos(data) {
   const canvas = document.getElementById('motivosChart');
   if (!canvas) return;
@@ -365,7 +371,7 @@ function renderMotivos(data) {
   });
 }
 
-// ── Tendencia personal ────────────────────────────────────────
+//  Tendencia personal 
 let _tendenciaChart = null;
 function renderTendenciaPersonal(data) {
   const canvas = document.getElementById('tendenciaPersonalChart');
@@ -399,7 +405,7 @@ function renderTendenciaPersonal(data) {
   });
 }
 
-// ── Comentarios recibidos ─────────────────────────────────────
+//  Comentarios recibidos 
 function renderComentarios(data) {
   const section   = document.getElementById('comentariosSection');
   const container = document.getElementById('comentariosRecientes');
@@ -422,7 +428,7 @@ function renderComentarios(data) {
   }).join('');
 }
 
-// ── Mensajes motivacionales ───────────────────────────────────
+// Mensajes motivacionales 
 async function mostrarMensajesMotivacionales(detalle) {
   const footer = document.getElementById('mensajeMotivacional');
   if (!footer) return;

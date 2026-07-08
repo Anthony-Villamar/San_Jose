@@ -42,7 +42,6 @@ async function cargarRoles(selectElement, selectedRol = '') {
 
 // Cargar roles en el select de registro al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-  cargarRoles(document.getElementById('rol'));
   cargarAreas();
 });
 
@@ -186,7 +185,6 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
   const telefono = telefonoInput.value.trim();
   const usuario = document.getElementById('usuarioNuevo').value.trim();
   const contrasena = document.getElementById('contrasenaNuevo').value.trim();
-  const rol = document.getElementById('rol').value;
 
   if (!correoValido) {
     return Swal.fire({
@@ -195,7 +193,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
     });
   }
 
-  if (!cedula || !nombre || !apellido || !correo || !telefono || !usuario || !contrasena || !rol) {
+  if (!cedula || !nombre || !apellido || !correo || !telefono || !usuario || !contrasena) {
     return Swal.fire({
       icon: 'warning',
       title: 'Campos incompletos'
@@ -212,8 +210,7 @@ document.getElementById('registroForm').addEventListener('submit', async (e) => 
         correo,
         telefono,
         usuario,
-        contrasena,
-        rol
+        contrasena
       })
     });
 
@@ -269,9 +266,7 @@ document.getElementById('areaForm')?.addEventListener('submit', async e => {
     document.getElementById('areaForm').reset();
     document.getElementById('areaMensaje').textContent = '';
     await cargarAreas();
-    await cargarRoles(document.getElementById('rol'));
   } catch (err) {
     Swal.fire({ icon: 'error', title: 'Error', text: err.message });
   }
 });
-

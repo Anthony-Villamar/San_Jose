@@ -83,7 +83,7 @@ async function cargarRoles(selectElement, selectedRol = '') {
   try {
     const res = await fetch('/api/usuarios/roles');
     if (!res.ok) throw new Error('Error al cargar roles');
-    const roles = await res.json(); // debe ser array de strings ["secretaria", "docente", ...]
+    const roles = await res.json();
 
     // Limpiar opciones previas (excepto el primer option)
     const primerOption = selectElement.querySelector('option');
@@ -183,13 +183,13 @@ document.getElementById('actualizarForm').addEventListener('submit', async (e) =
 
 
   const regexUsuario = /^[a-zA-Z]+$/;
-  if (!regexUsuario.test(usuario)) {
+  if (usuario && !regexUsuario.test(usuario)) {
     alert('El usuario solo puede contener letras.');
     return;
   }
 
   const regexContrasena = /^[a-zA-Z0-9]+$/;
-  if (!regexContrasena.test(contrasena)) {
+  if (contrasena && !regexContrasena.test(contrasena)) {
     alert('La contraseña solo puede contener letras y números.');
     return;
   }

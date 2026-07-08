@@ -1,3 +1,4 @@
+// Ruta para generar mensajes motivacionales usando la API de OpenAI
 import express from 'express';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';

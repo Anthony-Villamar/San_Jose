@@ -57,7 +57,7 @@ menuLinks.forEach((link) => {
   }
 });
 
-// ── Dashboard completo (solo en /administrador) ───────────────
+//  Dashboard
 if (document.getElementById("kpiContainer")) {
   (async () => {
     try {
@@ -78,7 +78,7 @@ if (document.getElementById("kpiContainer")) {
   })();
 }
 
-// ── KPIs ──────────────────────────────────────────────────────
+//  KPIs 
 function _renderKPIs(r) {
   const container = document.getElementById("kpiContainer");
   if (!container) return;
@@ -105,7 +105,7 @@ function _renderKPIs(r) {
   `).join("");
 }
 
-// ── Comparativa por área ───────────────────────────────────────
+// Comparativa por área 
 function _renderAreaChart(data) {
   const ctx = document.getElementById("areaChart")?.getContext("2d");
   if (!ctx || !data.length) return;
@@ -130,7 +130,7 @@ function _renderAreaChart(data) {
   });
 }
 
-// ── Día de semana ─────────────────────────────────────────────
+//  Día de semana 
 function _renderDiaSemana(data) {
   const ctx = document.getElementById("diaSemanaChart")?.getContext("2d");
   if (!ctx) return;
@@ -157,7 +157,7 @@ function _renderDiaSemana(data) {
   });
 }
 
-// ── Top 3 ─────────────────────────────────────────────────────
+// Top 3 
 const _top3Container = document.getElementById("top3Container");
 if (_top3Container) { /* cargado arriba junto al resto del dashboard */ }
 
@@ -286,7 +286,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (closeBtn) closeBtn.addEventListener("click", _closeModal);
   if (overlay)  overlay.addEventListener("click", e => { if (e.target === overlay) _closeModal(); });
 });
-// ──────────────────────────────────────────────────────────────
 
 // Logout
 const logoutBtn = document.getElementById("logoutBtn");
@@ -310,5 +309,3 @@ if (logoutBtn) {
     }
   });
 }
-
-

@@ -1,3 +1,4 @@
+// Ruta para generar reportes PDF de calificaciones, incluyendo gráficos y análisis con IA.
 import express from "express";
 import db from "./db.js";
 import PDFDocument from "pdfkit";
@@ -100,7 +101,9 @@ reportesRouter.get("/calificaciones/pdf", async (req, res) => {
         AVG(c.puntualidad) AS puntualidad,
         AVG(c.trato)       AS trato,
         AVG(c.resolucion)  AS resolucion,
-        SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) AS a_tiempo
+        SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) AS a_tiempo,
+        SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) AS fcr_count,
+        SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) AS csat_count
       FROM calificaciones c
       WHERE DATE(c.fecha) BETWEEN ? AND ?
         AND TIME(c.fecha) BETWEEN '07:00:00' AND '14:30:00'
@@ -116,9 +119,19 @@ reportesRouter.get("/calificaciones/pdf", async (req, res) => {
     const avgT        = rows.reduce((a, b) => a + Number(b.trato)       * b.total, 0) / total;
     const avgR        = rows.reduce((a, b) => a + Number(b.resolucion)  * b.total, 0) / total;
     const topDay      = rows.reduce((mx, r) => r.total > mx.total ? r : mx);
-    const totalATiempo = rows.reduce((a, b) => a + Number(b.a_tiempo), 0);
-    const pctATiempo  = total > 0 ? Math.round(totalATiempo / total * 100) : 0;
-    const nvTiempo    = pctATiempo >= 90 ? { text: "EXCELENTE", color: "#16a34a" } : pctATiempo >= 75 ? { text: "REGULAR", color: "#f59e0b" } : { text: "DEFICIENTE", color: "#dc2626" };
+    const totalATiempo = rows.reduce((a, b) => a + Number(b.a_tiempo),    0);
+    const totalFCR     = rows.reduce((a, b) => a + Number(b.fcr_count),  0);
+    const totalCSAT    = rows.reduce((a, b) => a + Number(b.csat_count), 0);
+    const pctATiempo   = total > 0 ? Math.round(totalATiempo / total * 100) : 0;
+    const pctFCR       = total > 0 ? Math.round(totalFCR     / total * 100) : 0;
+    const pctCSAT      = total > 0 ? Math.round(totalCSAT    / total * 100) : 0;
+    const satGeneral   = Math.round((pctCSAT + pctFCR + pctATiempo) / 3);
+
+    const nvPct = v => v >= 90 ? { text: "EXCELENTE", color: "#16a34a" } : v >= 75 ? { text: "REGULAR", color: "#f59e0b" } : { text: "DEFICIENTE", color: "#dc2626" };
+    const nvTiempo = nvPct(pctATiempo);
+    const nvFCR    = nvPct(pctFCR);
+    const nvCSAT   = nvPct(pctCSAT);
+    const nvSG     = nvPct(satGeneral);
 
     const nvP = nivelInfo(avgP, 3);
     const nvT = nivelInfo(avgT, 3);
@@ -169,7 +182,7 @@ reportesRouter.get("/calificaciones/pdf", async (req, res) => {
       }
     });
 
-    // --- AI: structured JSON ---
+    // --- IA: prompt para generar el analisis ---
     const resumenIA = rows.map(r =>
       `${String(r.dia).slice(0,10)}: total=${r.total}, punt=${r.puntualidad}/3, trato=${r.trato}/3, res=${r.resolucion}/3`
     ).join("\n");
@@ -178,34 +191,39 @@ reportesRouter.get("/calificaciones/pdf", async (req, res) => {
     try {
       const resp = await openai.responses.create({
         model: "gpt-4o-mini",
-        input: `Eres analista de calidad educativa. Devuelve ÚNICAMENTE JSON válido (sin markdown) con esta estructura:
-{
-  "resumen": "resumen del periodo en 2 oraciones",
-  "observacion": "observación clave sobre los datos en 2 oraciones",
-  "puntualidad": { "analisis": "2-3 oraciones", "recomendacion": "1 oración concreta" },
-  "trato":       { "analisis": "2-3 oraciones", "recomendacion": "1 oración concreta" },
-  "resolucion":  { "analisis": "2-3 oraciones", "recomendacion": "1 oración concreta" },
-  "recomendaciones": [
-    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" },
-    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" },
-    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" }
-  ],
-  "cita": "frase motivacional máximo 15 palabras"
-}
-Periodo ${inicio} al ${fin}, área: ${areaLabel}.
-Promedios: Puntualidad=${avgP.toFixed(2)}/3 (${nvP.text}), Trato=${avgT.toFixed(2)}/3 (${nvT.text}), Resolución=${avgR.toFixed(2)}/3 (${nvR.text}).
-Datos diarios:\n${resumenIA}`,
+        input: `Eres analista de calidad en atención al usuario en una institución educativa. Devuelve ÚNICAMENTE JSON válido (sin markdown) con esta estructura:
+                {
+                  "resumen": "resumen del periodo en 2 oraciones",
+                  "observacion": "observación clave sobre los datos en 2 oraciones",
+                  "csat":     { "analisis": "2-3 oraciones analizando el % de CSAT obtenido vs el umbral óptimo ≥85%", "recomendacion": "1 oración concreta de mejora" },
+                  "fcr":      { "analisis": "2-3 oraciones analizando el % de FCR obtenido vs el umbral óptimo ≥79%",  "recomendacion": "1 oración concreta de mejora" },
+                  "a_tiempo": { "analisis": "2-3 oraciones analizando el % de atenciones a tiempo vs el umbral óptimo ≥85%", "recomendacion": "1 oración concreta de mejora" },
+                  "recomendaciones": [
+                    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" },
+                    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" },
+                    { "titulo": "2-3 palabras", "descripcion": "2 oraciones" }
+                  ],
+                  "cita": "frase motivacional máximo 15 palabras"
+                }
+                CONTEXTO DE INDICADORES Y UMBRALES ÓPTIMOS:
+                - CSAT (satisfacción general del usuario): óptimo ≥ 85%, aceptable ≥ 70%. Calculado como % de encuestas con puntuación promedio ≥ 2/3.
+                - FCR (resolución en primera atención): óptimo ≥ 79%, aceptable ≥ 75%. Calculado como % de encuestas con resolución ≥ 2/3.
+                - % A Tiempo (velocidad de atención): óptimo ≥ 85%, aceptable ≥ 75%. Calculado como % de encuestas con tiempo de respuesta ≥ 2/3 (Adecuado o Rápido).
+                Analiza cada indicador comparándolo con su umbral óptimo, menciona el porcentaje obtenido y si está por encima o debajo del nivel esperado.
+                Periodo ${inicio} al ${fin}, área: ${areaLabel}.
+                Indicadores obtenidos: CSAT=${pctCSAT}%, FCR=${pctFCR}%, % A Tiempo=${pctATiempo}%, Satisfacción General=${satGeneral}%.
+                Datos diarios:\n${resumenIA}`,
         temperature: 0.7
       });
       let raw = (resp.output_text || "").replace(/```json\n?/g,"").replace(/```\n?/g,"").trim();
       ia = JSON.parse(raw);
     } catch {
       ia = {
-        resumen: `Informe del área de ${areaLabel} para el periodo ${inicio} al ${fin}. Se registraron ${total} atenciones en total.`,
-        observacion: "Los datos muestran variaciones en las calificaciones durante el periodo analizado.",
-        puntualidad: { analisis: `La puntualidad obtuvo un promedio de ${avgP.toFixed(2)}/3.`, recomendacion: "Revisar la distribución de turnos y tiempos de espera." },
-        trato:       { analisis: `El trato obtuvo un promedio de ${avgT.toFixed(2)}/3.`,       recomendacion: "Reforzar la capacitación en atención al usuario." },
-        resolucion:  { analisis: `La resolución obtuvo un promedio de ${avgR.toFixed(2)}/3.`,  recomendacion: "Optimizar los procesos de seguimiento de casos." },
+        resumen: `Informe del área de ${areaLabel} para el periodo ${inicio} al ${fin}. Se registraron ${total} atenciones con una satisfacción general del ${satGeneral}%.`,
+        observacion: `Los indicadores reflejan: CSAT ${pctCSAT}%, FCR ${pctFCR}%, % A Tiempo ${pctATiempo}%. Los datos muestran el desempeño de atención durante el periodo analizado.`,
+        csat:     { analisis: `El CSAT obtuvo ${pctCSAT}%, ${pctCSAT >= 85 ? 'superando' : 'por debajo de'} el umbral óptimo de ≥85%. Indica el porcentaje de usuarios que calificaron su atención de forma satisfactoria o muy satisfactoria.`, recomendacion: "Fortalecer la atención integral para mantener o mejorar la satisfacción del usuario." },
+        fcr:      { analisis: `El FCR alcanzó ${pctFCR}%, ${pctFCR >= 79 ? 'superando' : 'por debajo de'} el umbral óptimo de ≥79%. Refleja la capacidad de resolver las solicitudes en una sola atención.`, recomendacion: "Optimizar los procesos internos para incrementar la resolución efectiva en primera atención." },
+        a_tiempo: { analisis: `El indicador % A Tiempo registró ${pctATiempo}%, ${pctATiempo >= 85 ? 'superando' : 'por debajo de'} el umbral óptimo de ≥85%. Mide el porcentaje de atenciones con tiempo de respuesta adecuado o rápido.`, recomendacion: "Revisar la distribución de carga de solicitudes para reducir tiempos de espera." },
         recomendaciones: [
           { titulo: "Capacitación continua", descripcion: "Implementar programas de formación periódica en atención al usuario." },
           { titulo: "Revisión de procesos",  descripcion: "Evaluar y optimizar los flujos de atención para mejorar tiempos." },
@@ -287,10 +305,10 @@ Datos diarios:\n${resumenIA}`,
     const mW = (CW - 15) / 4;
     const mH = 88;
     const metrics = [
-      { label: "PUNTUALIDAD",   value: avgP,       color: "#2563eb", nv: nvP,      isPct: false },
-      { label: "TRATO",         value: avgT,       color: "#16a34a", nv: nvT,      isPct: false },
-      { label: "RESOLUCIÓN",    value: avgR,       color: "#f59e0b", nv: nvR,      isPct: false },
-      { label: "% A TIEMPO",    value: pctATiempo, color: "#0ea5e9", nv: nvTiempo, isPct: true  }
+      { label: "CSAT",          value: pctCSAT,    color: "#2563eb", nv: nvCSAT,   isPct: true },
+      { label: "FCR",           value: pctFCR,     color: "#16a34a", nv: nvFCR,    isPct: true },
+      { label: "% A TIEMPO",    value: pctATiempo, color: "#f59e0b", nv: nvTiempo, isPct: true },
+      { label: "SAT. GENERAL",  value: satGeneral, color: "#7c3aed", nv: nvSG,     isPct: true }
     ];
     metrics.forEach((m, i) => {
       const mx = PAD + i * (mW + 5);
@@ -354,21 +372,21 @@ Datos diarios:\n${resumenIA}`,
     doc.rect(0, 0, W, 8).fill("#0ea5e9");
     Y = 18;
 
-    // SECTION 4 — ANALYSIS PER ASPECT
-    sectionHeader(doc, PAD, Y, 4, "ANÁLISIS Y RETROALIMENTACIÓN POR ASPECTO", W - PAD);
+    // SECTION 4 — ANALYSIS PER KPI
+    sectionHeader(doc, PAD, Y, 4, "ANÁLISIS DE INDICADORES DE CALIDAD", W - PAD);
     Y += 26;
 
     const aspects = [
-      { label: "PUNTUALIDAD", color: "#2563eb", data: ia.puntualidad, nv: nvP },
-      { label: "TRATO",       color: "#16a34a", data: ia.trato,       nv: nvT },
-      { label: "RESOLUCIÓN",  color: "#f59e0b", data: ia.resolucion,  nv: nvR }
+      { label: "CSAT",       sub: "óptimo ≥ 85%", color: "#2563eb", data: ia.csat,     nv: nvCSAT,   value: pctCSAT    },
+      { label: "FCR",        sub: "óptimo ≥ 79%", color: "#16a34a", data: ia.fcr,      nv: nvFCR,    value: pctFCR     },
+      { label: "% A TIEMPO", sub: "óptimo ≥ 85%", color: "#f59e0b", data: ia.a_tiempo, nv: nvTiempo, value: pctATiempo }
     ];
     const aW = (CW - 10) / 3;
     const aTextH = Math.max(...aspects.map(a =>
-      doc.heightOfString(a.data.analisis, { width: aW - 14, lineGap: 1.5 }) +
-      doc.heightOfString(a.data.recomendacion, { width: aW - 14, lineGap: 1.5 })
+      doc.heightOfString(a.data?.analisis ?? '', { width: aW - 14, lineGap: 1.5 }) +
+      doc.heightOfString(a.data?.recomendacion ?? '', { width: aW - 14, lineGap: 1.5 })
     ));
-    const aH = Math.max(115, aTextH + 52);
+    const aH = Math.max(130, aTextH + 72);
 
     aspects.forEach((a, i) => {
       const ax = PAD + i * (aW + 5);
@@ -376,16 +394,25 @@ Datos diarios:\n${resumenIA}`,
       doc.roundedRect(ax, ay, aW, aH, 5).fill("white");
       doc.roundedRect(ax, ay, aW, aH, 5).lineWidth(0.8).strokeColor("#e2e8f0").stroke();
       doc.rect(ax, ay, aW, 4).fill(a.color);
-      doc.fillColor(a.color).fontSize(7.5).font("Helvetica-Bold")
+      // Label + sub
+      doc.fillColor(a.color).fontSize(8).font("Helvetica-Bold")
         .text(a.label, ax + 7, ay + 9, { width: aW - 14 });
+      doc.fillColor("#9ca3af").fontSize(6.5).font("Helvetica")
+        .text(a.sub, ax + 7, ay + 20, { width: aW - 14 });
+      // Big percentage value
+      doc.fillColor("#111827").fontSize(22).font("Helvetica-Bold")
+        .text(`${a.value}%`, ax + 7, ay + 30, { width: aW - 14 });
+      // Level badge inline
+      doc.roundedRect(ax + 7, ay + 54, aW - 14, 11, 2).fill(a.nv.color + "22");
+      doc.fillColor(a.nv.color).fontSize(6.5).font("Helvetica-Bold")
+        .text(`Nivel: ${a.nv.text}`, ax + 7, ay + 56, { width: aW - 14, align: "center" });
+      // Analysis text
       doc.fillColor("#374151").fontSize(7.5).font("Helvetica")
-        .text(a.data.analisis, ax + 7, ay + 22, { width: aW - 14, lineGap: 1.5 });
-      const anH = doc.heightOfString(a.data.analisis, { width: aW - 14, lineGap: 1.5 });
+        .text(a.data?.analisis ?? '', ax + 7, ay + 71, { width: aW - 14, lineGap: 1.5 });
+      const anH = doc.heightOfString(a.data?.analisis ?? '', { width: aW - 14, lineGap: 1.5 });
+      // Recommendation
       doc.fillColor(a.color).fontSize(7).font("Helvetica-Bold")
-        .text("→ " + a.data.recomendacion, ax + 7, ay + 26 + anH, { width: aW - 14, lineGap: 1.5 });
-      doc.roundedRect(ax + 5, ay + aH - 20, aW - 10, 13, 3).fill(a.nv.color + "22");
-      doc.fillColor(a.nv.color).fontSize(7).font("Helvetica-Bold")
-        .text(`Nivel: ${a.nv.text}`, ax + 5, ay + aH - 17, { width: aW - 10, align: "center" });
+        .text("→ " + (a.data?.recomendacion ?? ''), ax + 7, ay + 75 + anH, { width: aW - 14, lineGap: 1.5 });
     });
     Y += aH + 14;
 

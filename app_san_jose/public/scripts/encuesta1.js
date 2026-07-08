@@ -168,6 +168,6 @@ function activarModoPreguntaPorPantalla() {
 
 // Ejecutar en carga y al cambiar tamaño
 window.addEventListener("DOMContentLoaded", activarModoPreguntaPorPantalla);
-window.addEventListener("load", activarModoPreguntaPorPantalla); // <-- nuevo
+window.addEventListener("load", activarModoPreguntaPorPantalla);
 window.addEventListener("resize", activarModoPreguntaPorPantalla);
 
