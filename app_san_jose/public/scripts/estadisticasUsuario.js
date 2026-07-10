@@ -386,7 +386,7 @@ function renderTendenciaPersonal(data) {
   _tendenciaChart = new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
-      labels: data.map(d => String(d.dia).slice(5)),
+      labels: data.map(d => String(d.dia).slice(5, 10)),
       datasets: [
         { label: 'Puntualidad', data: data.map(d => d.puntualidad), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.06)', tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#2563eb' },
         { label: 'Trato',       data: data.map(d => d.trato),       borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.06)',  tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#16a34a' },
