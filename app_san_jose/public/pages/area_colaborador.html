@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Panel Secretaria</title>
+  <title>Panel Colaborador</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,9 +12,9 @@
   <div class="contenedor-padre">
     <header class="header">
       <nav>
-        <a href="/area_secretaria">Secretaria</a>
+        <a href="/area_colaborador" id="navAreaNombre">Mi área</a>
         <ul>
-          <a href="/area_secretaria">Inicio</a>
+          <a href="/area_colaborador">Inicio</a>
           <a id="editPerfilBtn" href="#">Mi perfil</a>
           <a id="logoutBtn">Cerrar sesión</a>
         </ul>
@@ -104,7 +104,7 @@
 
     <footer class="footer">
       <div class="footer-inner">
-        <p>&copy; <span id="anio"></span> Sistema de Atención — Secretaría</p>
+        <p>&copy; <span id="anio"></span> Sistema de Atención — <span id="footerAreaNombre"></span></p>
         <p id="mensajeMotivacional" class="mensaje-ia"></p>
       </div>
     </footer>
@@ -132,5 +132,20 @@
   </div>
 
   <script src="../scripts/estadisticasUsuario.js"></script>
+  <script>
+    (async () => {
+      try {
+        const me = await fetch('/api/login/me', { credentials: 'include' }).then(r => r.json());
+        const nombre = me.rol ? (me.rol.charAt(0).toUpperCase() + me.rol.slice(1)) : 'Mi área';
+        const nav    = document.getElementById('navAreaNombre');
+        const footer = document.getElementById('footerAreaNombre');
+        if (nav) {
+          nav.textContent = nombre;
+          nav.href = `/encuesta?area=${me.rol}`;
+        }
+        if (footer) footer.textContent = nombre;
+      } catch {}
+    })();
+  </script>
 </body>
 </html>

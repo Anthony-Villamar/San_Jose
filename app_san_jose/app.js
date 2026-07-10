@@ -82,17 +82,11 @@ app.get('/administrador_update', verificarRol('administrador'), (req, res) => {
 app.get('/administrador_deactivation', verificarRol('administrador'), (req, res) => {
   res.sendFile(path.join(__dirname, "public","pages","administrador_deactivation.html"));
 });
-app.get('/area_secretaria', verificarRol('secretaria', 'administrador'), (req, res) => {
-  res.sendFile(path.join(__dirname, "public","pages","area_secretaria.html"));
+app.get('/area_colaborador', verificarSesion, (req, res) => {
+  res.sendFile(path.join(__dirname, "public","pages","area_colaborador.html"));
 });
-app.get('/area_colecturia', verificarRol('colecturia', 'administrador'), (req, res) => {
-  res.sendFile(path.join(__dirname, "public","pages","area_colecturia.html"));
-});
-app.get('/secretaria', (req, res) => {
-  res.sendFile(path.join(__dirname, "public","pages","encuesta_secretaria.html"));
-});
-app.get('/colecturia', (req, res) => {
-  res.sendFile(path.join(__dirname, "public","pages","encuesta_colecturia.html"));
+app.get('/encuesta', (req, res) => {
+  res.sendFile(path.join(__dirname, "public","pages","encuesta.html"));
 });
 
 

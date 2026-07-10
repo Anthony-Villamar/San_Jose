@@ -59,13 +59,14 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
       if (me.rol === 'administrador') {
         window.location.href = "/administrador";
-      } else if (me.rol === 'secretaria') {
-        window.location.href = "/area_secretaria";
-      } else if (me.rol === 'colecturia') {
-        window.location.href = "/area_colecturia";
-      } 
-      else {
-        alert("Rol no reconocido.");
+      // } else if (me.rol === 'secretaria') {
+      //   window.location.href = "/area_secretaria";
+      // } else if (me.rol === 'colecturia') {
+      //   window.location.href = "/area_colecturia";
+      // } else {
+      //   alert("Rol no reconocido.");
+      } else {
+        window.location.href = "/area_colaborador";
       }
     } else {
       alert(respuesta.error);
