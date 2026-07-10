@@ -37,19 +37,23 @@ estadisticasRouter.get('/top3', verificarSesion, async (req, res) => {
   try {
     const sql = `
       SELECT
-  p.nombre, p.apellido,
-  ROUND(AVG(c.puntualidad), 2) AS promedio_puntualidad,
-  ROUND(AVG(c.trato), 2) AS promedio_trato,
-  ROUND(AVG(c.resolucion), 2) AS promedio_resolucion,
-  ROUND(AVG((c.puntualidad + c.trato + c.resolucion) / 3), 2) AS promedio
-FROM calificaciones c
-JOIN personas p ON c.cedula_usuario = p.cedula
-JOIN usuarios u ON u.cedula = p.cedula
-WHERE u.estado = 'activo'
-  AND TIME(c.fecha) BETWEEN '07:00:00' AND '14:30:00'
-GROUP BY c.cedula_usuario
-ORDER BY promedio DESC
-LIMIT 3;
+        p.nombre, p.apellido,
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat,
+        ROUND((
+          SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)
+        ) / 3, 1) AS promedio_pct
+      FROM calificaciones c
+      JOIN personas p ON c.cedula_usuario = p.cedula
+      JOIN usuarios u ON u.cedula = p.cedula
+      WHERE u.estado = 'activo'
+        AND TIME(c.fecha) BETWEEN '07:00:00' AND '14:30:00'
+      GROUP BY c.cedula_usuario
+      ORDER BY promedio_pct DESC
+      LIMIT 3;
     `;
     const [rows] = await db.query(sql);
     res.json(rows);
@@ -250,7 +254,11 @@ estadisticasRouter.get('/resumen', verificarSesion, async (req, res) => {
     `);
     const [[mes]] = await db.query(`
       SELECT COUNT(*) AS total,
-        ROUND(AVG((puntualidad + trato + resolucion) / 3), 2) AS promedio,
+        ROUND((
+          SUM(CASE WHEN puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN ROUND((puntualidad + trato + resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)
+        ) / 3, 1) AS promedio,
         ROUND(SUM(CASE WHEN puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo,
         ROUND(SUM(CASE WHEN resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
         ROUND(SUM(CASE WHEN ROUND((puntualidad + trato + resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat
@@ -260,7 +268,11 @@ estadisticasRouter.get('/resumen', verificarSesion, async (req, res) => {
     `);
     const [[mejorArea]] = await db.query(`
       SELECT a.nombre_area,
-        ROUND(AVG((c.puntualidad + c.trato + c.resolucion) / 3), 2) AS promedio
+        ROUND((
+          SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) +
+          SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0)
+        ) / 3, 1) AS promedio
       FROM calificaciones c
       JOIN areas a ON c.area_atencion = a.id_area
       WHERE YEAR(c.fecha) = YEAR(CURDATE()) AND MONTH(c.fecha) = MONTH(CURDATE())
@@ -288,9 +300,9 @@ estadisticasRouter.get('/por-area', verificarSesion, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT a.nombre_area,
-        ROUND(AVG(c.puntualidad), 2) AS puntualidad,
-        ROUND(AVG(c.trato), 2) AS trato,
-        ROUND(AVG(c.resolucion), 2) AS resolucion
+        ROUND(SUM(CASE WHEN c.puntualidad >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_a_tiempo,
+        ROUND(SUM(CASE WHEN c.resolucion >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_fcr,
+        ROUND(SUM(CASE WHEN ROUND((c.puntualidad + c.trato + c.resolucion) / 3.0) >= 2 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) AS pct_csat
       FROM calificaciones c
       JOIN areas a ON c.area_atencion = a.id_area
       WHERE DATE(c.fecha) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)

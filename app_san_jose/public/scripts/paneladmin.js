@@ -87,11 +87,11 @@ function _renderKPIs(r) {
   const cards = [
     { icon: "today",              label: "ATENCIONES HOY",  value: r.total_hoy,                sub: "registradas hoy",             accent: "#2563eb"              },
     { icon: "calendar_month",     label: "ESTE MES",         value: r.total_mes,                sub: "atenciones en el mes",        accent: "#7c3aed"              },
-    { icon: "star",               label: "PROMEDIO MES",     value: r.promedio_mes ?? 0,        sub: "de 3.00",                     accent: nc(r.promedio_mes),    small: false },
+    { icon: "star",               label: "PROMEDIO MES",     value: `${r.promedio_mes ?? 0}%`,  sub: "índice general",              accent: npct(r.promedio_mes),  small: false },
     { icon: "schedule",           label: "ATEND. A TIEMPO",  value: `${r.pct_a_tiempo ?? 0}%`, sub: "puntualidad ≥ Adecuado",      accent: npct(r.pct_a_tiempo),  small: false },
     { icon: "task_alt",           label: "FCR",              value: `${r.pct_fcr  ?? 0}%`,     sub: "resolución en 1ª atención",   accent: npct(r.pct_fcr),       small: false },
     { icon: "sentiment_satisfied",label: "CSAT",             value: `${r.pct_csat ?? 0}%`,     sub: "satisfacción general",        accent: npct(r.pct_csat),      small: false },
-    { icon: "emoji_events",       label: "ÁREA DESTACADA",   value: r.mejor_area ?? "—",        sub: `${r.mejor_area_promedio ?? 0} / 3`, accent: "#f59e0b",     small: true  }
+    { icon: "emoji_events",       label: "ÁREA DESTACADA",   value: r.mejor_area ?? "—",        sub: `${r.mejor_area_promedio ?? 0}%`, accent: "#f59e0b",        small: true  }
   ];
   container.innerHTML = cards.map(c => `
     <div class="kpi-card" style="border-left-color:${c.accent}">
@@ -114,16 +114,16 @@ function _renderAreaChart(data) {
     data: {
       labels: data.map(d => d.nombre_area),
       datasets: [
-        { label: "Puntualidad", data: data.map(d => d.puntualidad), backgroundColor: "#2563eb", borderRadius: 4 },
-        { label: "Trato",       data: data.map(d => d.trato),       backgroundColor: "#16a34a", borderRadius: 4 },
-        { label: "Resolución",  data: data.map(d => d.resolucion),  backgroundColor: "#f59e0b", borderRadius: 4 }
+        { label: "% A Tiempo", data: data.map(d => d.pct_a_tiempo), backgroundColor: "#2563eb", borderRadius: 4 },
+        { label: "FCR",        data: data.map(d => d.pct_fcr),      backgroundColor: "#16a34a", borderRadius: 4 },
+        { label: "CSAT",       data: data.map(d => d.pct_csat),     backgroundColor: "#f59e0b", borderRadius: 4 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
       scales: {
-        y: { beginAtZero: true, max: 3, ticks: { stepSize: 1 }, grid: { color: "rgba(0,0,0,0.05)" } },
+        y: { beginAtZero: true, max: 100, ticks: { stepSize: 20, callback: v => v + "%" }, grid: { color: "rgba(0,0,0,0.05)" } },
         x: { grid: { display: false } }
       }
     }
@@ -176,14 +176,13 @@ function _avatarHTML(nombre, apellido, color, size = 76) {
 }
 
 function _metricBar(label, value, color) {
-  const pct = Math.round((value / 3) * 100);
   return `
     <div class="modal-metric-row">
       <span class="modal-metric-name">${label}</span>
       <div class="modal-metric-track">
-        <div class="modal-metric-fill" style="width:${pct}%;background:${color};"></div>
+        <div class="modal-metric-fill" style="width:${value}%;background:${color};"></div>
       </div>
-      <span class="modal-metric-val" style="color:${color}">${value}</span>
+      <span class="modal-metric-val" style="color:${color}">${value}%</span>
     </div>`;
 }
 
@@ -200,8 +199,8 @@ function _renderTop3(container, top) {
       <p class="top3-name">${p.nombre} ${p.apellido}</p>
       ${p.rol ? `<span class="top3-rol">${p.rol}</span>` : ""}
       <div class="top3-avg">
-        <span class="avg-big">${p.promedio}</span>
-        <span class="avg-sub">/3</span>
+        <span class="avg-big">${p.promedio_pct}</span>
+        <span class="avg-sub">%</span>
       </div>
       <span class="top3-hint">Toca para ver detalles</span>
     `;
@@ -227,15 +226,15 @@ function _openModal(p, i) {
     </div>
     <div class="modal-avg-banner">
       <span>Promedio general</span>
-      <strong>${p.promedio} <small>/3</small></strong>
+      <strong>${p.promedio_pct} <small>%</small></strong>
     </div>
     <div class="modal-chart-wrap">
       <canvas id="radarModalChart"></canvas>
     </div>
     <div class="modal-metrics">
-      ${_metricBar("Puntualidad", p.promedio_puntualidad, _metricCols[0])}
-      ${_metricBar("Trato",       p.promedio_trato,       _metricCols[1])}
-      ${_metricBar("Resolución",  p.promedio_resolucion,  _metricCols[2])}
+      ${_metricBar("% A Tiempo", p.pct_a_tiempo, _metricCols[0])}
+      ${_metricBar("FCR",        p.pct_fcr,      _metricCols[1])}
+      ${_metricBar("CSAT",       p.pct_csat,     _metricCols[2])}
     </div>
   `;
 
@@ -248,9 +247,9 @@ function _openModal(p, i) {
     {
       type: "radar",
       data: {
-        labels: ["Puntualidad", "Trato", "Resolución"],
+        labels: ["% A Tiempo", "FCR", "CSAT"],
         datasets: [{
-          data: [p.promedio_puntualidad, p.promedio_trato, p.promedio_resolucion],
+          data: [p.pct_a_tiempo, p.pct_fcr, p.pct_csat],
           backgroundColor: _rankColors[i] + "33",
           borderColor: _rankColors[i],
           pointBackgroundColor: _rankColors[i],
@@ -264,8 +263,8 @@ function _openModal(p, i) {
         plugins: { legend: { display: false } },
         scales: {
           r: {
-            min: 0, max: 3,
-            ticks: { stepSize: 1, font: { size: 10 } },
+            min: 0, max: 100,
+            ticks: { stepSize: 20, callback: v => v + "%", font: { size: 10 } },
             pointLabels: { font: { size: 12, weight: "600" } }
           }
         }

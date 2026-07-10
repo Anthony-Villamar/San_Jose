@@ -94,14 +94,11 @@ form.addEventListener('submit', async (e) => {
                 icon: "success",
                 timer: 1500,
                 timerProgressBar: true
+            }).then(() => {
+                location.reload();
             });
-            form.reset();
-            atendidoSelect.selectedIndex = 0;
 
             if (activarModoPreguntaPorPantalla.modoActual) {
-        activarModoPreguntaPorPantalla.modoActual = null;
-        activarModoPreguntaPorPantalla();
-    }
         } else {
             Swal.fire("Error", "No se pudo guardar la encuesta", "error");
         }
