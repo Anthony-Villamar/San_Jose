@@ -114,6 +114,7 @@ function renderSingleMonth(dom, data, inicio, fin) {
     center: [d.dia.split('T')[0], 1],
     radius: M.pieR,
     coordinateSystem: 'calendar',
+    avoidLabelOverlap: false,
     label: { formatter: p => `${p.value}%`, position: 'inside', fontSize: Math.max(8, M.font - 3) },
     data: [
       { name: 'CSAT',      value: +(d.pct_csat     ?? 0) },
