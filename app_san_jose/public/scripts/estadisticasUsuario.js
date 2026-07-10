@@ -433,16 +433,16 @@ async function mostrarMensajesMotivacionales(detalle) {
   const footer = document.getElementById('mensajeMotivacional');
   if (!footer) return;
   const categorias = [
-    { nombre: 'Puntualidad', puntaje: detalle.promedio_puntualidad },
-    { nombre: 'Trato',       puntaje: detalle.promedio_trato       },
-    { nombre: 'Resolución',  puntaje: detalle.promedio_resolucion  }
+    { nombre: 'tiempo',     puntaje: detalle.pct_a_tiempo, t1: 75, t2: 85 },
+    { nombre: 'resolución', puntaje: detalle.pct_fcr,      t1: 75, t2: 79 },
+    { nombre: 'trato',      puntaje: detalle.pct_csat,     t1: 70, t2: 85 },
   ];
   const mensajes = await Promise.all(
     categorias.map(async c => {
       const res  = await fetch('/api/generar-mensaje', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoria: c.nombre, puntaje: Number(c.puntaje) })
+        body: JSON.stringify({ categoria: c.nombre, puntaje: Number(c.puntaje), t1: c.t1, t2: c.t2 })
       });
       const data = await res.json();
       return `<span>${c.nombre}: ${data.mensaje}</span>`;

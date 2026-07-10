@@ -27,24 +27,26 @@ function normCategoria(c) { return String(c || '').trim(); }
 function clamp05(n) { const x = Number(n); return Number.isFinite(x) ? Math.min(5, Math.max(0, x)) : 0; }
 
 iaRouter.post('/generar-mensaje', async (req, res) => {
-  let { categoria, puntaje, force } = req.body || {};
+  let { categoria, puntaje, t1, t2, force } = req.body || {};
   if (categoria == null || typeof puntaje !== 'number') {
     return res.status(400).json({ mensaje: "Se requiere 'categoria' y 'puntaje' numérico" });
   }
 
   categoria = normCategoria(categoria);
-  puntaje   = clamp05(puntaje);
+  puntaje   = Math.min(100, Math.max(0, Number(puntaje) || 0));
+  t1        = Number(t1) || 75;
+  t2        = Number(t2) || 85;
 
   const userId  = getUserId(req);
   const fecha   = hoyEC();
-  const cacheKey = `${userId}|${fecha}|${categoria}`;
+  const cacheKey = `${userId}|${fecha}|${categoria}|${t1}|${t2}`;
   const now      = nowMs();
 
   const cached = dailyCache.get(cacheKey);
 
   if (!cached) {
     try {
-      const mensaje = await generarMensaje(client, categoria, puntaje);
+      const mensaje = await generarMensaje(client, categoria, puntaje, t1, t2);
       dailyCache.set(cacheKey, { mensaje, fecha, userId, categoria, puntaje, timestamp: now });
       res.set('Cache-Control', 'no-store');
       return res.json({ mensaje, fuente: 'ia', fecha, categoria, puntaje_usado: puntaje });
@@ -84,7 +86,7 @@ iaRouter.post('/generar-mensaje', async (req, res) => {
   }
 
   try {
-    const mensaje = await generarMensaje(client, categoria, puntaje);
+    const mensaje = await generarMensaje(client, categoria, puntaje, t1, t2);
     dailyCache.set(cacheKey, { mensaje, fecha, userId, categoria, puntaje, timestamp: now });
     res.set('Cache-Control', 'no-store');
     return res.json({
@@ -102,11 +104,17 @@ iaRouter.post('/generar-mensaje', async (req, res) => {
 
 export default iaRouter;
 
-async function generarMensaje(client, categoria, puntaje) {
+async function generarMensaje(client, categoria, puntaje, t1, t2) {
+  const tono =
+    puntaje >= t2
+      ? `El colaborador está por encima del rango óptimo (≥${t2}%). Genera un mensaje breve para felicitarlo y animarlo a mantener ese nivel.`
+      : puntaje >= t1
+      ? `El colaborador está dentro del rango óptimo (${t1}–${t2}%). Genera un mensaje breve que lo impulse a seguir mejorando un poco más.`
+      : `El colaborador está por debajo del rango óptimo (<${t1}%). Genera un mensaje breve, alentador y positivo que lo motive a mejorar.`;
   const prompt = `
-    Eres un asistente que genera un mensaje motivacional POSITIVO y MUY breve,
-    en una sola línea, sin emojis, para un usuario sobre su ${categoria}
-    con puntaje ${puntaje} (0–5). Máximo 16 palabras.
+    Eres un asistente que genera mensajes motivacionales BREVES, en una sola línea, sin emojis,
+    para colaboradores de una institución educativa, sobre su indicador de "${categoria}"
+    (valor actual: ${puntaje}%). ${tono} Máximo 16 palabras.
   `.trim();
 
   const response = await client.responses.create({
