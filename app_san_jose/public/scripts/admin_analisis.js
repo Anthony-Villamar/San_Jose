@@ -39,22 +39,19 @@ function renderRadarCalendar(data, inicio, fin) {
   const container = document.getElementById("radar-calendar");
   container.innerHTML = "";
 
-  // Obtener lista de meses en el rango
-  const startDate = new Date(inicio);
-  const endDate = new Date(fin);
+  const parseLocal = str => { const [y, m, d] = str.split('-').map(Number); return new Date(y, m - 1, d); };
 
-  // Asegurarse de que startDate sea el primer día del mes
-  startDate.setDate(1);
-  let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1); // Primer día del mes de inicio
+  const startDate = parseLocal(inicio);
+  const endDate   = parseLocal(fin);
 
-  // Iterar por cada mes en el rango
+  let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
   while (current <= endDate) {
     const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
-    const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+    const monthEnd   = new Date(current.getFullYear(), current.getMonth() + 1, 0);
 
-    // Filtrar datos para este mes
     const monthData = data.filter(d => {
-      const day = new Date(d.dia);
+      const day = parseLocal(d.dia.split('T')[0]);
       return day >= monthStart && day <= monthEnd;
     });
 
